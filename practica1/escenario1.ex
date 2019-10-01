@@ -9,7 +9,7 @@ import Fib
 
 defmodule Servidor do
   def server() do
-    [op | tail] =
+    {pid, [op | tail]} =
       receive do
         l -> l
       end
