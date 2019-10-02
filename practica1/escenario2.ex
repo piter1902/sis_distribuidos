@@ -9,6 +9,12 @@ import Fib
 
 defmodule Servidor do
   def server() do
+    # Escuchamos peticiones del cliente
+
+    # Enviamos la peticion al pool
+
+    # Enviamos respuesta a cliente
+    server()
   end
 end
 
@@ -20,10 +26,25 @@ defmodule Pool do
   end
 
   defp pool(list) do
+    # Esperamos una peticion del master
+
+    # Enviamos un worker al master
+
     pool(list)
   end
 
   def escucharPeticiones(list) do
     escucharPeticiones(list)
+  end
+end
+
+defmodule Worker do
+  def worker() do
+    # Miramos peticion
+
+    # Esperamos a una peticion del pool
+
+    # Nos ponemos disponibles
+    worker()
   end
 end
