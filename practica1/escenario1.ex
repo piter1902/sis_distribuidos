@@ -9,20 +9,68 @@ import Fib
 
 defmodule Servidor do
   def server() do
-    {pid, [client_pid,op | tail]} =
-      receive do
-        l -> l
-      end
+    # Escuchamos peticiones del cliente
 
-    #fib_list =
-      cond do
-        op == :fib -> Enum.map(tail, fn x -> Fib.fibonacci(x) end)
-        op == :fib_tr -> Enum.map(tail, fn x -> Fib.fibonacci_tr(x) end)
-        op == :of -> Enum.map(tail, fn x -> Fib.of(x) end)
-      end
+    # Enviamos la peticion al pool
 
-    IO.puts tail  
-    #send(client_pid, fib_list)
-    #server()
+    # Enviamos respuesta a cliente
+    server()
+  end
+end
+
+defmodule Pool do
+  def pool() do
+    
+    lista_disponibles = [{:w1, :"w1@10.1.62.237"}, {:w2,:"w2@10.1.62.237"}]
+    lista_ocupados = []
+    spawn(Pool, :escucharPeticiones, [lista_disponibles,lista_ocupados])
+    pool(lista_disponibles,lista_ocupados)
+  end
+
+  defp pool(disp,ocu) do
+
+    # Esperamos una peticion del master
+    pid_master =
+    receive do
+      {:peti, pid} -> pid
+    end
+    [head | tail] = disp
+    disp = tail
+    
+    #Marcamos al worker que enviamos como ocupado
+    ocu ++ [head]
+
+    # Enviamos un worker al master
+    send(
+      pid_master,
+      {:ok,head}
+    )
+
+    pool(disp,ocu)
+  end
+
+  def escucharPeticiones(disp,ocu) do
+    #Recibimos confirmación de final de los workers
+    pid_worker=
+    receive do
+      {:fin,pid_worker} -> pid_worker
+    end 
+    
+    #con estas operaciones, marcamos nodo como desocupado
+    disp ++ [pid_worker]  
+    ocu -- [pid_worker]
+    escucharPeticiones(disp,ocu)
+  end
+end
+
+defmodule Worker do
+  def worker(pid_w, pid_p, op, lista) do
+    # Miramos peticion
+
+
+    # Esperamos a una peticion del pool
+
+    # Nos ponemos disponibles
+    
   end
 end
