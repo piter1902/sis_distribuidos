@@ -95,27 +95,15 @@ defmodule Cliente do
     end
   end
 
-  def ejecuta_fib(op, lower, upper) do
-   cond do
-        op == :fib ->  Fib.fibonacci(lower)
-        op == :fib_tr -> Fib.fibonacci_tr(lower)
-        op == :of -> Fib.of(lower)
-    end
-  end 
-
-  def ejecuta_fib(op, lower, upper) when lower < upper do
-    cond do
-        op == :fib ->  Fib.fibonacci(lower)
-        op == :fib_tr -> Fib.fibonacci_tr(lower)
-        op == :of -> Fib.of(lower)
-    end
-    ejecuta_fib(lower + 1, upper)
-  end
-
   def prueba(op) do
     t1 = Time.utc_now()
     lower..upper = 1..36
-    ejecuta_fib(op, lower, upper)
+    tail = Enum.to_list(lower..upper)
+    cond do
+        op == :fib -> Enum.map(tail, fn x -> Fib.fibonacci(x) end)
+        op == :fib_tr -> Enum.map(tail, fn x -> Fib.fibonacci_tr(x) end)
+        op == :of -> Enum.map(tail, fn x -> Fib.of(x) end)
+      end
     t2 = Time.utc_now()
     IO.puts(inspect(Time.diff(t2, t1, :microsecond)))
   end
