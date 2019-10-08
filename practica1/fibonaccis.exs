@@ -82,11 +82,13 @@ defmodule Cliente do
   end
 
   def recibir() do
+    IO.puts("Procedemos a recibir en cliente")
     lista=
     receive do
       {:fin, result} -> result
     end
     IO.puts(inspect(lista))
+    
     recibir()
   end
 

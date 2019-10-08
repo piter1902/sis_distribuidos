@@ -15,6 +15,7 @@ defmodule Servidor do
     receive do
       {client, op, limits} -> {client, op, limits}
     end
+    IO.puts("Ha llegado y generamos proceso.")
      spawn(
        Servidor,
        :comunicar,
@@ -26,6 +27,7 @@ defmodule Servidor do
 
   defp comunicar(pid_client,pool, op, lista) do
     #Pide worker al pool
+    IO.puts("Generado proceso comunicar y enviamos a pool")
     send(
       pool,
       {:peti,self()}
@@ -35,6 +37,7 @@ defmodule Servidor do
     receive do
       {:ok, pid_w} -> pid_w
     end
+    IO.puts("Hemos recibido worker, con pid #{pid_w}" )
     #Ahora nos quedamos unicamente con el pid del worker (ya que lo recibido era algo del tipo: {:w1,PID})
     {at, name_w} = pid_w
 
@@ -46,10 +49,12 @@ defmodule Servidor do
       :worker,
       [pid_w,pool,op,lista]
     )
+    IO.puts(inspect(result))
     send(
       pid_client,
       {:fin,result}
     )
+    IO.puts("Muerte de comunicar")
   end
 end
 
@@ -58,6 +63,7 @@ defmodule Pool do
     
     lista_disponibles = [{:w1, :"w1@10.1.62.237"}, {:w2,:"w2@10.1.62.237"}]
     lista_ocupados = []
+    IO.puts("Soy Pool y genero hilo de escucha peticiones")
     spawn(Pool, :escucharPeticiones, [lista_disponibles,lista_ocupados])
     pool(lista_disponibles,lista_ocupados)
   end
@@ -65,32 +71,36 @@ defmodule Pool do
   defp pool(disp,ocu) do
 
     # Esperamos una peticion del master
+    IO.puts("Escucho peticion de master")
     pid_master =
     receive do
       {:peti, pid} -> pid
     end
+
     [head | tail] = disp
     disp = tail
     
     #Marcamos al worker que enviamos como ocupado
     ocu ++ [head]
-
+    IO.puts("Le envio a master el worker #{head} y me queda en disponibles #{tail}")
     # Enviamos un worker al master
     send(
       pid_master,
       {:ok,head}
     )
-
+    IO.puts("Envio realizado")
     pool(disp,ocu)
   end
 
   def escucharPeticiones(disp,ocu) do
     #Recibimos confirmación de final de los workers
+    IO.puts("Estoy en funcion escucharPeticiones")
     pid_worker=
     receive do
       {:fin,pid_worker} -> pid_worker
     end 
     
+    IO.puts("Procedemos a desocupar #{pid_worker}")
     #con estas operaciones, marcamos nodo como desocupado
     disp ++ [pid_worker]  
     ocu -- [pid_worker]
@@ -101,6 +111,7 @@ end
 defmodule Worker do
   def worker(pid_w, pid_p, op, lista) do
     # Miramos peticion
+    IO.puts("Soy el worker #{pid_w}")
     result=
     cond do
       op == :fib -> Enum.map(lista, fn x -> Fib.fibonacci(x) end)
@@ -108,7 +119,7 @@ defmodule Worker do
       op == :of -> Enum.map(lista, fn x -> Fib.of(x) end)
     end
     # Nos ponemos disponibles
-
+    IO.puts("Envio a pool que estoy libre")
     send(
       pid_p,
       {:fin,pid_w}
