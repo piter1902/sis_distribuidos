@@ -9,7 +9,7 @@ import Fib
 
 defmodule Servidor do
   def server() do
-    pid_pool = {:pool, :"pool@10.1.62.237"}
+    pid_pool = {:pool, :"pool@10.1.55.251"}
     # Escuchamos peticiones del cliente
     {client, op, limits}=
     receive do
@@ -61,7 +61,7 @@ end
 defmodule Pool do
   def pool() do
     
-    lista_disponibles = [{:w1, :"w1@10.1.62.237"}, {:w2,:"w2@10.1.62.237"}]
+    lista_disponibles = [{:w1, :"w1@10.1.55.251"}, {:w2,:"w2@10.1.55.251"}]
     lista_ocupados = []
     IO.puts("Soy Pool y genero hilo de escucha peticiones")
     spawn(Pool, :escucharPeticiones, [lista_disponibles,lista_ocupados])

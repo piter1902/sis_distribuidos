@@ -50,11 +50,12 @@ defmodule Cliente do
 
   def genera_workload(server_pid, escenario, time) do
     t1 = Time.utc_now()
+
     cond do
       time <= 3 ->
         launch(server_pid, :fib, 8)
         Process.sleep(2000)
-        
+
       time == 4 ->
         launch(server_pid, :fib, 8)
         Process.sleep(round(:rand.uniform(100) / 100 * 2000))
@@ -67,6 +68,7 @@ defmodule Cliente do
         launch(server_pid, :fib_tr, 8)
         Process.sleep(round(:rand.uniform(2) / 2 * 2000))
     end
+
     t2 = Time.utc_now()
     IO.puts(inspect(Time.diff(t2, t1, :microsecond)))
 
@@ -75,11 +77,13 @@ defmodule Cliente do
 
   def genera_workload(server_pid, escenario) do
     t1 = Time.utc_now()
+
     if escenario == 1 do
       launch(server_pid, :fib, 1)
     else
       launch(server_pid, :fib, 4)
     end
+
     Process.sleep(2000)
     t2 = Time.utc_now()
     IO.puts(inspect(Time.diff(t2, t1, :microsecond)))
@@ -99,11 +103,14 @@ defmodule Cliente do
     t1 = Time.utc_now()
     lower..upper = 1..36
     tail = Enum.to_list(lower..upper)
-    lista = cond do
+
+    lista =
+      cond do
         op == :fib -> Enum.map(tail, fn x -> Fib.fibonacci(x) end)
         op == :fib_tr -> Enum.map(tail, fn x -> Fib.fibonacci_tr(x) end)
         op == :of -> Enum.map(tail, fn x -> Fib.of(x) end)
       end
+
     t2 = Time.utc_now()
     IO.puts(inspect(Time.diff(t2, t1, :microsecond)))
     IO.puts(inspect(lista))
