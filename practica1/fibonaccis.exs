@@ -81,7 +81,17 @@ defmodule Cliente do
     genera_workload(server_pid,client_pid, escenario)
   end
 
+  def recibir() do
+    lista=
+    receive do
+      {:fin, result} -> result
+    end
+    IO.puts(inspect(lista))
+    recibir()
+  end
+
   def cliente(server_pid, tipo_escenario) do
+  spawn(Cliente, :recibir, [])
     case tipo_escenario do
       :uno -> genera_workload(server_pid,self(), 1)
       :dos -> genera_workload(server_pid,self(), 2)

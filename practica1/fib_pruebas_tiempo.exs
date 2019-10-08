@@ -99,12 +99,13 @@ defmodule Cliente do
     t1 = Time.utc_now()
     lower..upper = 1..36
     tail = Enum.to_list(lower..upper)
-    cond do
+    lista = cond do
         op == :fib -> Enum.map(tail, fn x -> Fib.fibonacci(x) end)
         op == :fib_tr -> Enum.map(tail, fn x -> Fib.fibonacci_tr(x) end)
         op == :of -> Enum.map(tail, fn x -> Fib.of(x) end)
       end
     t2 = Time.utc_now()
     IO.puts(inspect(Time.diff(t2, t1, :microsecond)))
+    IO.puts(inspect(lista))
   end
 end
