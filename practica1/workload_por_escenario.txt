@@ -1,0 +1,4 @@
+En el esceneario...
+:uno -> 2 tareas cada 2 segundos
+:dos -> 4 tareas cada 2 segundos
+:tres -> 8 tareas cada 1.17 segundos (en media) -> Variable en funcion del tiempo
