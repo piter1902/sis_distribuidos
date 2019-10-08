@@ -94,4 +94,29 @@ defmodule Cliente do
       :tres -> genera_workload(server_pid, 3, 1)
     end
   end
+
+  def ejecuta_fib(op, lower, upper) do
+   cond do
+        op == :fib ->  Fib.fibonacci(lower)
+        op == :fib_tr -> Fib.fibonacci_tr(lower)
+        op == :of -> Fib.of(lower)
+    end
+  end 
+
+  def ejecuta_fib(op, lower, upper) when lower < upper do
+    cond do
+        op == :fib ->  Fib.fibonacci(lower)
+        op == :fib_tr -> Fib.fibonacci_tr(lower)
+        op == :of -> Fib.of(lower)
+    end
+    ejecuta_fib(lower + 1, upper)
+  end
+
+  def prueba(op) do
+    t1 = Time.utc_now()
+    lower..upper = 1..36
+    ejecuta_fib(op, lower, upper)
+    t2 = Time.utc_now()
+    IO.puts(inspect(Time.diff(t2, t1, :microsecond)))
+  end
 end
