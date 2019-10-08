@@ -40,11 +40,11 @@ end
 
 defmodule Cliente do
   def launch(pid,client_pid, op, 0) do
-    send(pid,[client_pid, op, 1..36])
+    send(pid,{client_pid, op, 1..36})
   end
 
   def launch(pid,client_pid, op, n) when n != 0 do
-    send(pid,[client_pid,op, 1..36])
+    send(pid,{client_pid,op, 1..36})
     launch(pid,client_pid, op, n - 1)
   end
 
