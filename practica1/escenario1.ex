@@ -16,6 +16,7 @@ defmodule Servidor do
       {client, op, limits} -> {client, op, limits}
     end
     IO.puts("Ha llegado y generamos proceso.")
+    IO.puts(inspect(client))
      spawn(
        Servidor,
        :comunicar,
@@ -59,8 +60,8 @@ defmodule Servidor do
 end
 
 defmodule Pool do
+  
   def pool() do
-
     lista_disponibles = [:"w1@10.1.55.251", :"w2@10.1.55.251"]
     lista_ocupados = []
     lista_pendientes = []
@@ -80,23 +81,28 @@ defmodule Pool do
 
     cond do
       atomo == :peti -> 
-        IO.puts("Aqui llego: separare head y tail")
-        [head | tail] = disp
-        disp = tail
-        IO.puts("Aqui llego, voy a anadir head a ocupados.")
-        IO.puts(inspect(head))
-        IO.puts(inspect(tail))
-        IO.puts(inspect(disp))
-        IO.puts(inspect(ocu))
-        #Marcamos al worker que enviamos como ocupado
-        ocu = ocu ++ [head]
-        IO.puts("Le envio a master el worker #{head} y me queda en disponibles ")
-        # Enviamos un worker al master
-        send(
-          pid_master,
-          {:ok,head}
-        )
-        IO.puts("Envio realizado")
+        if disp != [] do
+          IO.puts("Aqui llego: separare head y tail")
+          [head | tail] = disp
+          disp = tail
+          IO.puts("Aqui llego, voy a anadir head a ocupados.")
+          IO.puts(inspect(head))
+          IO.puts(inspect(tail))
+          IO.puts(inspect(disp))
+          IO.puts(inspect(ocu))
+          #Marcamos al worker que enviamos como ocupado
+          ocu = ocu ++ [head]
+          IO.puts("Le envio a master el worker #{head} y me queda en disponibles ")
+          # Enviamos un worker al master
+          send(
+            pid,
+            {:ok,head}
+          )
+          IO.puts("Envio realizado")
+           
+        else
+          pend = pend ++ [pid]
+        end
       atomo == :fin ->
         # Fin de worker -> anadimos a disponible
         # Comprobamos si hay alguien esperando        
