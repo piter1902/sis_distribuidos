@@ -38,13 +38,11 @@ defmodule Servidor do
       {:ok, pid_w} -> pid_w
     end
     IO.puts("Hemos recibido worker, con pid #{pid_w}" )
-    #Ahora nos quedamos unicamente con el pid del worker (ya que lo recibido era algo del tipo: {:w1,PID})
-    {at, name_w} = pid_w
 
     #Generamos el proceso en el nodo y guardamos resultado en la variable resutl
     result=
     Node.spawn(
-      name_w,
+      pid_w,
       Worker,
       :worker,
       [pid_w,pool,op,lista]
