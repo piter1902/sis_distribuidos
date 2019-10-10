@@ -128,7 +128,7 @@ defmodule Pool do
 end
 
 defmodule Worker do
-  def worker(pid_w, pid_p, op, lista) do
+  def worker(pid_master, pid_w, pid_p, op, lista) do
     # Miramos peticion
     IO.puts("Soy el worker #{pid_w}")
     result=
@@ -144,8 +144,12 @@ defmodule Worker do
       {:fin,pid_w}
     )
 
-   #Devolvemos resultado  
-   result
+   
+   # Devolvemos resultado -> Enviando a master
+   send(
+     pid_master,
+     result
+   ) 
 
   end
 end
