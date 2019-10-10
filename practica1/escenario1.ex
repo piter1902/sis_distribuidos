@@ -63,7 +63,7 @@ end
 defmodule Pool do
   def pool() do
 
-    lista_disponibles = [{:w1, :"w1@10.1.55.251"}, {:w2,:"w2@10.1.55.251"}]
+    lista_disponibles = [:"w1@10.1.55.251", :"w2@10.1.55.251"]
     lista_ocupados = []
     IO.puts("Soy Pool y genero hilo de escucha peticiones")
     spawn(Pool, :escucharPeticiones, [lista_disponibles,lista_ocupados])
@@ -79,11 +79,12 @@ defmodule Pool do
       {:peti, pid} -> pid
     end
 
+    IO.puts("Aqui llego: separare head y tail")
     [head | tail] = disp
     disp = tail
-
+    IO.puts("Aqui llego, voy a anadir head a ocupados")
     #Marcamos al worker que enviamos como ocupado
-    ocu ++ [head]
+    ocu = ocu ++ [head]
     IO.puts("Le envio a master el worker #{head} y me queda en disponibles #{tail}")
     # Enviamos un worker al master
     send(
