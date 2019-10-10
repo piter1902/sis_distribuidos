@@ -63,54 +63,62 @@ defmodule Pool do
 
     lista_disponibles = [:"w1@10.1.55.251", :"w2@10.1.55.251"]
     lista_ocupados = []
+    lista_pendientes = []
     IO.puts("Soy Pool y genero hilo de escucha peticiones")
-    spawn(Pool, :escucharPeticiones, [lista_disponibles,lista_ocupados])
-    pool(lista_disponibles,lista_ocupados)
+    pool(lista_disponibles,lista_ocupados, lista_pendientes)
   end
 
-  defp pool(disp,ocu) do
+  defp pool(disp,ocu,pend) do
 
     # Esperamos una peticion del master
     IO.puts("Escucho peticion de master")
-    pid_master =
+    {atomo, pid} =
     receive do
-      {:peti, pid} -> pid
+      {:peti, pid} -> {:peti, pid}
+      {:fin, pid} -> {:fin, pid}
     end
 
-    IO.puts("Aqui llego: separare head y tail")
-    [head | tail] = disp
-    disp = tail
-    IO.puts("Aqui llego, voy a anadir head a ocupados.")
-    IO.puts(inspect(head))
-    IO.puts(inspect(tail))
-    IO.puts(inspect(disp))
-    IO.puts(inspect(ocu))
-    #Marcamos al worker que enviamos como ocupado
-    ocu = ocu ++ [head]
-    IO.puts("Le envio a master el worker #{head} y me queda en disponibles #{tail}")
-    # Enviamos un worker al master
-    send(
-      pid_master,
-      {:ok,head}
-    )
-    IO.puts("Envio realizado")
-    pool(disp,ocu)
+    cond do
+      atomo == :peti -> 
+        IO.puts("Aqui llego: separare head y tail")
+        [head | tail] = disp
+        disp = tail
+        IO.puts("Aqui llego, voy a anadir head a ocupados.")
+        IO.puts(inspect(head))
+        IO.puts(inspect(tail))
+        IO.puts(inspect(disp))
+        IO.puts(inspect(ocu))
+        #Marcamos al worker que enviamos como ocupado
+        ocu = ocu ++ [head]
+        IO.puts("Le envio a master el worker #{head} y me queda en disponibles ")
+        # Enviamos un worker al master
+        send(
+          pid_master,
+          {:ok,head}
+        )
+        IO.puts("Envio realizado")
+      atomo == :fin ->
+        # Fin de worker -> anadimos a disponible
+        # Comprobamos si hay alguien esperando        
+        if pend != [] do
+          # Existe alguien esperando -> Le damos servicio
+          [pid_pendiente | resto] = pend
+          pend = resto
+          send(
+            pid_pendiente,
+            {:ok, pid}
+          )
+        else
+          # Lo devolvemos a la lista de disponibles
+          ocu = ocu -- [pid]
+          disp = disp ++ [pid]
+        end
+    end
+
+    
+    pool(disp,ocu,pend)
   end
 
-  def escucharPeticiones(disp,ocu) do
-    #Recibimos confirmación de final de los workers
-    IO.puts("Estoy en funcion escucharPeticiones")
-    pid_worker=
-    receive do
-      {:fin,pid_worker} -> pid_worker
-    end 
-
-    IO.puts("Procedemos a desocupar #{pid_worker}")
-    #con estas operaciones, marcamos nodo como desocupado
-    disp ++ [pid_worker]  
-    ocu -- [pid_worker]
-    escucharPeticiones(disp,ocu)
-  end
 end
 
 defmodule Worker do
