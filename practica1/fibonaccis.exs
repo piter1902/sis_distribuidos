@@ -39,65 +39,68 @@ defmodule Fib do
 end
 
 defmodule Cliente do
-  def launch(pid,client_pid, op, 0) do
-    send(pid,{client_pid, op, 1..36})
+  def launch(pid, client_pid, op, 0) do
+    send(pid, {client_pid, op, 1..36})
   end
 
-  def launch(pid,client_pid, op, n) when n != 0 do
-    send(pid,{client_pid,op, 1..36})
-    launch(pid,client_pid, op, n - 1)
+  def launch(pid, client_pid, op, n) when n != 0 do
+    send(pid, {client_pid, op, 1..36})
+    launch(pid, client_pid, op, n - 1)
   end
 
-  def genera_workload(server_pid,client_pid, escenario, time) do
+  def genera_workload(server_pid, client_pid, escenario, time) do
     cond do
       time <= 3 ->
-        launch(server_pid,client_pid, :fib, 8)
+        launch(server_pid, client_pid, :fib, 8)
         Process.sleep(2000)
 
       time == 4 ->
-        launch(server_pid,client_pid, :fib, 8)
+        launch(server_pid, client_pid, :fib, 8)
         Process.sleep(round(:rand.uniform(100) / 100 * 2000))
 
       time <= 8 ->
-        launch(server_pid,client_pid, :fib, 8)
+        launch(server_pid, client_pid, :fib, 8)
         Process.sleep(round(:rand.uniform(100) / 1000 * 2000))
 
       time == 9 ->
-        launch(server_pid,client_pid, :fib_tr, 8)
+        launch(server_pid, client_pid, :fib_tr, 8)
         Process.sleep(round(:rand.uniform(2) / 2 * 2000))
     end
 
-    genera_workload(server_pid,client_pid, escenario, rem(time + 1, 10))
+    genera_workload(server_pid, client_pid, escenario, rem(time + 1, 10))
   end
 
-  def genera_workload(server_pid,client_pid, escenario) do
+  def genera_workload(server_pid, client_pid, escenario) do
     if escenario == 1 do
-      launch(server_pid,client_pid, :fib, 1)
+      launch(server_pid, client_pid, :fib, 1)
     else
-      launch(server_pid,client_pid, :fib, 4)
+      launch(server_pid, client_pid, :fib, 4)
     end
 
     Process.sleep(2000)
-    genera_workload(server_pid,client_pid, escenario)
+    genera_workload(server_pid, client_pid, escenario)
   end
 
   def recibir() do
     IO.puts("Procedemos a recibir en cliente")
-    lista=
-    receive do
-      {:fin, result} -> result
-    end
+
+    lista =
+      receive do
+        {:fin, result} -> result
+      end
+
     IO.puts(inspect(lista))
-    
+
     recibir()
   end
 
   def cliente(server_pid, tipo_escenario) do
-  spawn(Cliente, :recibir, [])
+    spawn(Cliente, :recibir, [])
+
     case tipo_escenario do
-      :uno -> genera_workload(server_pid,self(), 1)
-      :dos -> genera_workload(server_pid,self(), 2)
-      :tres -> genera_workload(server_pid,self(), 3, 1)
+      :uno -> genera_workload(server_pid, self(), 1)
+      :dos -> genera_workload(server_pid, self(), 2)
+      :tres -> genera_workload(server_pid, self(), 3, 1)
     end
   end
 end
