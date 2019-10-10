@@ -41,13 +41,18 @@ defmodule Servidor do
     IO.puts("Hemos recibido worker, con pid #{pid_w}" )
 
     #Generamos el proceso en el nodo y guardamos resultado en la variable resutl
-    result=
+    
     Node.spawn(
       pid_w,
       Worker,
       :worker,
-      [pid_w,pool,op,lista]
+      [self(),pid_w,pool,op,lista]
     )
+    
+    result=
+    receive do
+      result -> result
+    end
 
     IO.puts(inspect(result))
     
@@ -104,9 +109,11 @@ defmodule Pool do
           pend = pend ++ [pid]
         end
       atomo == :fin ->
+        IO.puts("Nos ha llegado peticion de fin del worker #{pid}")
         # Fin de worker -> anadimos a disponible
         # Comprobamos si hay alguien esperando        
         if pend != [] do
+          IO.puts("Hay algun pendiente.")
           # Existe alguien esperando -> Le damos servicio
           [pid_pendiente | resto] = pend
           pend = resto
@@ -116,9 +123,12 @@ defmodule Pool do
           )
         else
           # Lo devolvemos a la lista de disponibles
+          IO.puts("No hay ningun pendiente")
           ocu = ocu -- [pid]
           disp = disp ++ [pid]
         end
+        IO.puts("La lista de ocupados se quedaria:")
+        IO.puts(inspect(ocu))
     end
 
     
