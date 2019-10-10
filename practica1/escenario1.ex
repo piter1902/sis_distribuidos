@@ -80,7 +80,11 @@ defmodule Pool do
     IO.puts("Aqui llego: separare head y tail")
     [head | tail] = disp
     disp = tail
-    IO.puts("Aqui llego, voy a anadir head a ocupados")
+    IO.puts("Aqui llego, voy a anadir head a ocupados.")
+    IO.puts(inspect(head))
+    IO.puts(inspect(tail))
+    IO.puts(inspect(disp))
+    IO.puts(inspect(ocu))
     #Marcamos al worker que enviamos como ocupado
     ocu = ocu ++ [head]
     IO.puts("Le envio a master el worker #{head} y me queda en disponibles #{tail}")
