@@ -25,7 +25,7 @@ defmodule Servidor do
     server()
   end
 
-  defp comunicar(pid_client,pool, op, lista) do
+  def comunicar(pid_client,pool, op, lista) do
     #Pide worker al pool
     IO.puts("Generado proceso comunicar y enviamos a pool")
     send(
