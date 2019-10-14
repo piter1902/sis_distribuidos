@@ -78,14 +78,10 @@ defmodule Pool do
 
     # Esperamos una peticion del master
     IO.puts("Escucho peticion de master")
-    {atomo, pid} =
+    
+    {disp,ocu,pend}=
     receive do
-      {:peti, pid} -> {:peti, pid}
-      {:fin, pid} -> {:fin, pid}
-    end
-
-    cond do
-      atomo == :peti -> 
+      {:peti, pid} -> 
         if disp != [] do
           IO.puts("Aqui llego: separare head y tail")
           [head | tail] = disp
@@ -108,7 +104,8 @@ defmodule Pool do
         else
           pend = pend ++ [pid]
         end
-      atomo == :fin ->
+        {disp,ocu,pend}
+      {:fin, pid} -> 
         IO.puts("Nos ha llegado peticion de fin del worker #{pid}")
         # Fin de worker -> anadimos a disponible
         # Comprobamos si hay alguien esperando        
@@ -127,11 +124,13 @@ defmodule Pool do
           ocu = ocu -- [pid]
           disp = disp ++ [pid]
         end
-        IO.puts("La lista de ocupados se quedaria:")
-        IO.puts(inspect(ocu))
+        {disp,ocu,pend}
     end
 
-    
+    IO.puts(inspect(disp))
+    IO.puts(inspect(ocu)))
+    IO.puts(inspect(pend))
+
     pool(disp,ocu,pend)
   end
 
