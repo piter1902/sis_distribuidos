@@ -93,11 +93,11 @@ defmodule Cliente do
   end
 
   def cliente(server_pid, tipo_escenario) do
-  spawn(Cliente, :recibir, [])
+  pid = spawn(Cliente, :recibir, [])
     case tipo_escenario do
-      :uno -> genera_workload(server_pid,self(), 1)
-      :dos -> genera_workload(server_pid,self(), 2)
-      :tres -> genera_workload(server_pid,self(), 3, 1)
+      :uno -> genera_workload(server_pid, pid, 1)
+      :dos -> genera_workload(server_pid, pid, 2)
+      :tres -> genera_workload(server_pid, pid, 3, 1)
     end
   end
 end

@@ -9,7 +9,7 @@ import Fib
 
 defmodule Servidor do
   def server() do
-    pid_pool = {:pool, :"pool@10.1.55.251"}
+    pid_pool = {:pool, :"pool@10.1.56.75"}
     # Escuchamos peticiones del cliente
     {client, op, limits}=
     receive do
@@ -67,7 +67,7 @@ end
 defmodule Pool do
   
   def pool() do
-    lista_disponibles = [:"w1@10.1.55.251", :"w2@10.1.55.251"]
+    lista_disponibles = [:"w1@10.1.56.75", :"w2@10.1.56.75"]
     lista_ocupados = []
     lista_pendientes = []
     IO.puts("Soy Pool y genero hilo de escucha peticiones")
@@ -87,10 +87,6 @@ defmodule Pool do
           [head | tail] = disp
           disp = tail
           IO.puts("Aqui llego, voy a anadir head a ocupados.")
-          IO.puts(inspect(head))
-          IO.puts(inspect(tail))
-          IO.puts(inspect(disp))
-          IO.puts(inspect(ocu))
           #Marcamos al worker que enviamos como ocupado
           ocu = ocu ++ [head]
           IO.puts("Le envio a master el worker #{head} y me queda en disponibles ")
@@ -100,11 +96,14 @@ defmodule Pool do
             {:ok,head}
           )
           IO.puts("Envio realizado")
-           
+          IO.puts(inspect(disp))
+          {disp,ocu,pend}
         else
           pend = pend ++ [pid]
-        end
-        {disp,ocu,pend}
+          IO.puts("Estamos en el caso de no disponibles -> pend = ")
+          IO.puts(inspect(pend))
+          {disp,ocu,pend}
+        end        
       {:fin, pid} -> 
         IO.puts("Nos ha llegado peticion de fin del worker #{pid}")
         # Fin de worker -> anadimos a disponible
@@ -118,17 +117,18 @@ defmodule Pool do
             pid_pendiente,
             {:ok, pid}
           )
+        {disp,ocu,pend}
         else
           # Lo devolvemos a la lista de disponibles
           IO.puts("No hay ningun pendiente")
           ocu = ocu -- [pid]
           disp = disp ++ [pid]
+          {disp,ocu,pend}
         end
-        {disp,ocu,pend}
     end
 
     IO.puts(inspect(disp))
-    IO.puts(inspect(ocu)))
+    IO.puts(inspect(ocu))
     IO.puts(inspect(pend))
 
     pool(disp,ocu,pend)
