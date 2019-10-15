@@ -9,14 +9,12 @@ import Fib
 
 defmodule Servidor do
   def server() do
-    pid_pool = {:pool, :"pool@10.1.56.75"}
+    pid_pool = {:pool, :"pool@10.1.59.57"}
     # Escuchamos peticiones del cliente
     {client, op, limits}=
     receive do
       {client, op, limits} -> {client, op, limits}
     end
-    IO.puts("Ha llegado y generamos proceso.")
-    IO.puts(inspect(client))
      spawn(
        Servidor,
        :comunicar,
@@ -28,7 +26,6 @@ defmodule Servidor do
 
   def comunicar(pid_client,pool, op, lista) do
     #Pide worker al pool
-    IO.puts("Generado proceso comunicar y enviamos a pool")
     send(
       pool,
       {:peti,self()}
@@ -38,7 +35,6 @@ defmodule Servidor do
     receive do
       {:ok, pid_w} -> pid_w
     end
-    IO.puts("Hemos recibido worker, con pid #{pid_w}" )
 
     #Generamos el proceso en el nodo y guardamos resultado en la variable resutl
     
@@ -54,13 +50,10 @@ defmodule Servidor do
       result -> result
     end
 
-    IO.puts(inspect(result))
-    
     send(
       pid_client,
       {:fin,result}
     )
-    IO.puts("Muerte de comunicar")
   end
 end
 
@@ -70,32 +63,28 @@ defmodule Pool do
     lista_disponibles = [:"w1@10.1.56.75", :"w2@10.1.56.75",:"w1@10.1.56.75", :"w2@10.1.56.75",:"w1@10.1.56.75", :"w2@10.1.56.75",:"w1@10.1.56.75", :"w2@10.1.56.75"]
     lista_ocupados = []
     lista_pendientes = []
-    IO.puts("Soy Pool y genero hilo de escucha peticiones")
+    
     pool(lista_disponibles,lista_ocupados, lista_pendientes)
   end
 
   defp pool(disp,ocu,pend) do
 
     # Esperamos una peticion del master
-    IO.puts("Escucho peticion de master")
-    
     {disp,ocu,pend}=
     receive do
       {:peti, pid} -> 
         if disp != [] do
-          IO.puts("Aqui llego: separare head y tail")
           [head | tail] = disp
           disp = tail
-          IO.puts("Aqui llego, voy a anadir head a ocupados.")
+          
           #Marcamos al worker que enviamos como ocupado
           ocu = ocu ++ [head]
-          IO.puts("Le envio a master el worker #{head} y me queda en disponibles ")
           # Enviamos un worker al master
           send(
             pid,
             {:ok,head}
           )
-          IO.puts("Envio realizado")
+          IO.puts("Disponibles ->")
           IO.puts(inspect(disp))
           {disp,ocu,pend}
         else
@@ -109,7 +98,7 @@ defmodule Pool do
         # Fin de worker -> anadimos a disponible
         # Comprobamos si hay alguien esperando        
         if pend != [] do
-          IO.puts("Hay algun pendiente.")
+          IO.puts("Hay algun pendiente despues de dejar worker.")
           # Existe alguien esperando -> Le damos servicio
           [pid_pendiente | resto] = pend
           pend = resto
@@ -120,16 +109,12 @@ defmodule Pool do
         {disp,ocu,pend}
         else
           # Lo devolvemos a la lista de disponibles
-          IO.puts("No hay ningun pendiente")
+          IO.puts("No hay ningun pendiente despues de dejar worker")
           ocu = ocu -- [pid]
           disp = disp ++ [pid]
           {disp,ocu,pend}
         end
     end
-
-    IO.puts(inspect(disp))
-    IO.puts(inspect(ocu))
-    IO.puts(inspect(pend))
 
     pool(disp,ocu,pend)
   end
@@ -139,7 +124,6 @@ end
 defmodule Worker do
   def worker(pid_master, pid_w, pid_p, op, lista) do
     # Miramos peticion
-    IO.puts("Soy el worker #{pid_w}")
     result=
     cond do
       op == :fib -> Enum.map(lista, fn x -> Fib.fibonacci(x) end)
@@ -147,7 +131,7 @@ defmodule Worker do
       op == :of -> Enum.map(lista, fn x -> Fib.of(x) end)
     end
     # Nos ponemos disponibles
-    IO.puts("Envio a pool que estoy libre")
+   
     send(
       pid_p,
       {:fin,pid_w}
