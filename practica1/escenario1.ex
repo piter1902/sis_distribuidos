@@ -67,7 +67,7 @@ end
 defmodule Pool do
   
   def pool() do
-    lista_disponibles = [:"w1@10.1.56.75", :"w2@10.1.56.75"]
+    lista_disponibles = [:"w1@10.1.56.75", :"w1@10.1.56.75", :"w1@10.1.56.75", :"w1@10.1.56.75"]
     lista_ocupados = []
     lista_pendientes = []
     IO.puts("Soy Pool y genero hilo de escucha peticiones")
