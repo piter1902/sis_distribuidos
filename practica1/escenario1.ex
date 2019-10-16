@@ -12,7 +12,7 @@ defmodule Servidor do
     lista_disponibles = [:"w1@10.1.56.75", :"w1@10.1.56.75",:"w1@10.1.56.75", :"w1@10.1.56.75"]
     lista_ocupados = []
     lista_pendientes = []
-    server(disp, ocu, pend)
+    server(lista_disponibles, lista_ocupados, lista_pendientes)
   end
 
   def server(disp, ocu, pend) do
@@ -32,7 +32,7 @@ defmodule Servidor do
           )
           {disp,ocu,pend}
         else
-          pend = pend ++ [pid]
+          pend = pend ++ [{client,op,limits}]
           IO.puts("Estamos en el caso de no disponibles -> pend = ")
           IO.puts(inspect(pend))
           {disp,ocu,pend}
@@ -43,24 +43,25 @@ defmodule Servidor do
             # Existe alguien esperando -> Le damos servicio
             [pid_pendiente | resto] = pend
             pend = resto
+            {cliente,op,limits} = pid_pendiente
             spawn(
               Servidor,
               :comunicar,
-              [self(),pid_w,pid_pendiente,op,limits]
+              [self(),pid_w,cliente,op,limits]
             )
           {disp,ocu,pend}
         else
           # Lo devolvemos a la lista de disponibles
           IO.puts("No hay ningun pendiente")
-          ocu = ocu -- [pid]
-          disp = disp ++ [pid]
+          ocu = ocu -- [pid_w]
+          disp = disp ++ [pid_w]
           {disp,ocu,pend}
         end
     end
     server(disp,ocu,pend)
   end
 
-  def comunicar(pid_server,pid_w,pid_c,op,limits) do
+  def comunicar(pid_server,pid_w,pid_client,op,limits) do
     #Generamos el proceso en el nodo y guardamos resultado en la variable resutl
     
     Node.spawn(
