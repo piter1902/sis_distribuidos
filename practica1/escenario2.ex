@@ -13,19 +13,19 @@ defmodule Servidor do
     # Escuchamos peticiones del cliente
     {client, op, limits} =
       receive do
-        {client, op, limits} -> {client, op, limits}
+        {client, op, limits,time,nEnvio} -> {client, op, limits,time,nEnvio}
       end
 
     spawn(
       Servidor,
       :comunicar,
-      [client, pid_pool, op, Enum.to_list(limits)]
+      [client, pid_pool, op, Enum.to_list(limits),time,nEnvio]
     )
 
     server()
   end
 
-  def comunicar(pid_client, pool, op, lista) do
+  def comunicar(pid_client, pool, op, lista,time,nEnvio) do
     # Pide worker al pool
     send(
       pool,
@@ -54,7 +54,7 @@ defmodule Servidor do
 
     send(
       pid_client,
-      {:fin, result}
+      {:fin, result,time,nEnvio}
     )
   end
 end

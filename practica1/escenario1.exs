@@ -20,7 +20,7 @@ defmodule Servidor do
     # Escuchamos peticiones del cliente
     {disp, ocu, pend} =
       receive do
-        {client, op, limits} ->
+        {client, op, limits,time,nEnvio} ->
           if disp != [] do
             [head | tail] = disp
             disp = tail
@@ -29,12 +29,12 @@ defmodule Servidor do
             spawn(
               Servidor,
               :comunicar,
-              [self(), head, client, op, limits]
+              [self(), head, client, op, limits,time,nEnvio]
             )
 
             {disp, ocu, pend}
           else
-            pend = pend ++ [{client, op, limits}]
+            pend = pend ++ [{client, op, limits,time,nEnvio}]
             IO.puts("Estamos en el caso de no disponibles -> pend = ")
             IO.puts(inspect(pend))
             {disp, ocu, pend}
@@ -46,12 +46,12 @@ defmodule Servidor do
             # Existe alguien esperando -> Le damos servicio
             [pid_pendiente | resto] = pend
             pend = resto
-            {cliente, op, limits} = pid_pendiente
+            {cliente, op, limits,time,nEnvio} = pid_pendiente
 
             spawn(
               Servidor,
               :comunicar,
-              [self(), pid_w, cliente, op, limits]
+              [self(), pid_w, cliente, op, limits,time,nEnvio]
             )
 
             {disp, ocu, pend}
@@ -67,7 +67,7 @@ defmodule Servidor do
     server(disp, ocu, pend)
   end
 
-  def comunicar(pid_server, pid_w, pid_client, op, limits) do
+  def comunicar(pid_server, pid_w, pid_client, op, limits,time,nEnvio) do
     # Generamos el proceso en el nodo y guardamos resultado en la variable resutl
 
     # Node.spawn(
@@ -76,6 +76,7 @@ defmodule Servidor do
     #   :worker,
     #   [self(), pid_w, pid_server, op, Enum.to_list(limits)]
     # )
+    
     Worker.worker(self(), pid_w, pid_server, op, Enum.to_list(limits))
 
     result =
@@ -83,11 +84,11 @@ defmodule Servidor do
         result -> result
       end
 
-    IO.puts(inspect(result))
+    
 
     send(
       pid_client,
-      {:fin, result}
+      {:fin, result,time,nEnvio}
     )
 
     IO.puts("Muerte de comunicar")

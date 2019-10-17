@@ -9,18 +9,18 @@ import Fib
 
 defmodule Servidor do
   def server() do
-    lista_disponibles = [:"w1@10.1.56.75", :"w1@10.1.56.75", :"w1@10.1.56.75", :"w1@10.1.56.75"]
+    lista_disponibles = [:"worker@127.0.0.1", :"worker@127.0.0.1", :"worker@127.0.0.1", :"worker@127.0.0.1"]
     lista_ocupados = []
     lista_pendientes = []
     server(lista_disponibles, lista_ocupados, lista_pendientes)
   end
 
   def server(disp, ocu, pend) do
-    # pid_pool = {:pool, :"pool@10.1.56.75"}
+    # pid_pool = {:pool, :"pool@127.0.0.1"}
     # Escuchamos peticiones del cliente
     {disp, ocu, pend} =
       receive do
-        {client, op, limits} ->
+        {client, op, limits,time,nEnvio} ->
           if disp != [] do
             [head | tail] = disp
             disp = tail
@@ -29,12 +29,12 @@ defmodule Servidor do
             spawn(
               Servidor,
               :comunicar,
-              [self(), head, client, op, limits]
+              [self(), head, client, op, limits,time,nEnvio]
             )
 
             {disp, ocu, pend}
           else
-            pend = pend ++ [{client, op, limits}]
+            pend = pend ++ [{client, op, limits,time,nEnvio}]
             IO.puts("Estamos en el caso de no disponibles -> pend = ")
             IO.puts(inspect(pend))
             {disp, ocu, pend}
@@ -46,12 +46,12 @@ defmodule Servidor do
             # Existe alguien esperando -> Le damos servicio
             [pid_pendiente | resto] = pend
             pend = resto
-            {cliente, op, limits} = pid_pendiente
+            {cliente, op, limits,time,nEnvio} = pid_pendiente
 
             spawn(
               Servidor,
               :comunicar,
-              [self(), pid_w, cliente, op, limits]
+              [self(), pid_w, cliente, op, limits,time,nEnvio]
             )
 
             {disp, ocu, pend}
@@ -67,26 +67,35 @@ defmodule Servidor do
     server(disp, ocu, pend)
   end
 
-  def comunicar(pid_server, pid_w, pid_client, op, limits) do
+  def comunicar(pid_server, pid_w, pid_client, op, limits,time,nEnvio) do
     # Generamos el proceso en el nodo y guardamos resultado en la variable resutl
 
-    Node.spawn(
-      pid_w,
-      Worker,
-      :worker,
-      [self(), pid_w, pid_server, op, Enum.to_list(limits)]
-    )
+    # Node.spawn(
+    #   pid_w,
+    #   Worker,
+    #   :worker,
+    #   [self(), pid_w, pid_server, op, Enum.to_list(limits)]
+    # )
+    IO.puts("Soy comunicar y como valores tengo:")
+    IO.puts(inspect(pid_server))
+    IO.puts(inspect(pid_w))
+    IO.puts(inspect(pid_client))
+    IO.puts(inspect(op))
+    IO.puts(inspect(limits))
+    IO.puts(inspect(time))
+    IO.puts(inspect(nEnvio))
+    Worker.worker(self(), pid_w, pid_server, op, Enum.to_list(limits))
 
     result =
       receive do
         result -> result
       end
 
-    IO.puts(inspect(result))
+    IO.puts(inspect(pid_client))
 
     send(
       pid_client,
-      {:fin, result}
+      {:fin, result,time,nEnvio}
     )
 
     IO.puts("Muerte de comunicar")
