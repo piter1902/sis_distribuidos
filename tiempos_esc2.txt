@@ -1,176 +1,192 @@
-Al envio 4, le ha costado:
-1558048
-Al envio 3, le ha costado:
-1563910
-Al envio 1, le ha costado:
-1572772
-Al envio 2, le ha costado:
-1570100
-Al envio 5, le ha costado:
-1499472
-Al envio 7, le ha costado:
-1501954
-Al envio 8, le ha costado:
-1502667
-Al envio 6, le ha costado:
-1510130
-Al envio 9, le ha costado:
-1606320
-Al envio 10, le ha costado:
-1608809
-Al envio 12, le ha costado:
-1609392
-Al envio 11, le ha costado:
-1612291
-Al envio 14, le ha costado:
-1500606
-Al envio 15, le ha costado:
-1500914
-Al envio 16, le ha costado:
-1506967
-Al envio 13, le ha costado:
-1514569
-Al envio 18, le ha costado:
-1578487
-Al envio 20, le ha costado:
-1578749
-Al envio 19, le ha costado:
-1579310
-Al envio 17, le ha costado:
-1589939
-Al envio 23, le ha costado:
-1608439
-Al envio 22, le ha costado:
-1608640
-Al envio 21, le ha costado:
-1611008
-Al envio 24, le ha costado:
-1611712
-Al envio 26, le ha costado:
-1499153
-Al envio 25, le ha costado:
-1501147
-Al envio 28, le ha costado:
-1501316
-Al envio 27, le ha costado:
-1503176
-Al envio 30, le ha costado:
-1607297
-Al envio 32, le ha costado:
-1607988
-Al envio 31, le ha costado:
-1610119
-Al envio 29, le ha costado:
-1611794
-Al envio 35, le ha costado:
-1591982
-Al envio 36, le ha costado:
-1592182
-Al envio 34, le ha costado:
-1593566
-Al envio 33, le ha costado:
-1593887
-Al envio 37, le ha costado:
-1571100
-Al envio 40, le ha costado:
-1573283
-Al envio 38, le ha costado:
-1574546
-Al envio 39, le ha costado:
-1574743
-Al envio 41, le ha costado:
-1604699
-Al envio 43, le ha costado:
-1608286
-Al envio 44, le ha costado:
-1608433
-Al envio 42, le ha costado:
-1608545
-Al envio 48, le ha costado:
-1497087
-Al envio 45, le ha costado:
-1498721
-Al envio 47, le ha costado:
-1500643
-Al envio 46, le ha costado:
-1505901
-Al envio 49, le ha costado:
-1608600
-Al envio 51, le ha costado:
-1609202
-Al envio 50, le ha costado:
-1610808
-Al envio 52, le ha costado:
-1613703
-Al envio 56, le ha costado:
-1592261
-Al envio 54, le ha costado:
-1592546
-Al envio 53, le ha costado:
-1592889
-Al envio 55, le ha costado:
-1594467
-Al envio 58, le ha costado:
-1497090
-Al envio 60, le ha costado:
-1499974
-Al envio 59, le ha costado:
-1500252
-Al envio 57, le ha costado:
-1501418
-Al envio 63, le ha costado:
-1572863
-Al envio 61, le ha costado:
-1574276
-Al envio 64, le ha costado:
-1574459
-Al envio 62, le ha costado:
-1589090
-Al envio 65, le ha costado:
-1501116
-Al envio 66, le ha costado:
-1501711
-Al envio 68, le ha costado:
-1504253
-Al envio 67, le ha costado:
-1506353
-Al envio 69, le ha costado:
-1499334
-Al envio 72, le ha costado:
-1499504
-Al envio 71, le ha costado:
-1502304
-Al envio 70, le ha costado:
-1503864
-Al envio 73, le ha costado:
-1501064
-Al envio 75, le ha costado:
-1501242
-Al envio 76, le ha costado:
-1512022
-Al envio 74, le ha costado:
-1513864
-Al envio 79, le ha costado:
-1501746
-Al envio 77, le ha costado:
-1502055
-Al envio 80, le ha costado:
-1505172
-Al envio 78, le ha costado:
-1505449
-Al envio 82, le ha costado:
-1501060
-Al envio 81, le ha costado:
-1502035
-Al envio 84, le ha costado:
-1502583
-Al envio 83, le ha costado:
-1503234
-Al envio 86, le ha costado:
-1501097
-Al envio 87, le ha costado:
-1501548
-Al envio 85, le ha costado:
-1501834
-Al envio 88, le ha costado:
-1503921
+NE: 3
+1621496
+NE: 4
+1627229
+NE: 2
+1627444
+NE: 1
+1637483
+NE: 8
+1597519
+NE: 5
+1598361
+NE: 6
+1604641
+NE: 7
+1604805
+NE: 12
+1530011
+NE: 11
+1532680
+NE: 10
+1534606
+NE: 9
+1535497
+NE: 13
+1606990
+NE: 16
+1609019
+NE: 14
+1609739
+NE: 15
+1616273
+NE: 17
+1630060
+NE: 19
+1635781
+NE: 20
+1636542
+NE: 18
+1637320
+NE: 21
+1632372
+NE: 24
+1632905
+NE: 22
+1633793
+NE: 23
+1635048
+NE: 28
+1582286
+NE: 27
+1582538
+NE: 26
+1584025
+NE: 25
+1589467
+NE: 30
+1617518
+NE: 31
+1620244
+NE: 32
+1620442
+NE: 29
+1621683
+NE: 35
+1523793
+NE: 33
+1526130
+NE: 36
+1526351
+NE: 34
+1528696
+NE: 38
+1632392
+NE: 40
+1635333
+NE: 39
+1637523
+NE: 37
+1637850
+NE: 41
+1585966
+NE: 42
+1587997
+NE: 43
+1588961
+NE: 44
+1591559
+NE: 48
+1611322
+NE: 47
+1612185
+NE: 45
+1623795
+NE: 46
+1629047
+NE: 50
+1614224
+NE: 49
+1615606
+NE: 51
+1619719
+NE: 52
+1620559
+NE: 55
+1631808
+NE: 56
+1633627
+NE: 53
+1634983
+NE: 54
+1635465
+NE: 60
+1583223
+NE: 59
+1587391
+NE: 57
+1587692
+NE: 58
+1588241
+NE: 63
+1573448
+NE: 62
+1573820
+NE: 61
+1575866
+NE: 64
+1577764
+NE: 67
+1576791
+NE: 66
+1579537
+NE: 65
+1580921
+NE: 68
+1591493
+NE: 69
+1575743
+NE: 71
+1576205
+NE: 70
+1578450
+NE: 72
+1580660
+NE: 76
+1628553
+NE: 75
+1630099
+NE: 73
+1637562
+NE: 74
+1637800
+NE: 77
+1602171
+NE: 80
+1603617
+NE: 79
+1604223
+NE: 78
+1605881
+NE: 83
+1616745
+NE: 81
+1617448
+NE: 84
+1618678
+NE: 82
+1619620
+NE: 88
+1586577
+NE: 85
+1589210
+NE: 86
+1592537
+NE: 87
+1593277
+NE: 91
+1519352
+NE: 90
+1520001
+NE: 92
+1522804
+NE: 89
+1527686
+NE: 95
+1616157
+NE: 94
+1617223
+NE: 93
+1617522
+NE: 96
+1618670
