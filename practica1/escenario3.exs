@@ -8,8 +8,14 @@
 import Fib
 
 defmodule Servidor do
-  def server() do
-    pid_pool = {:pool, :"pool@10.1.59.57"}
+
+  def server(name, name_pool) do
+    Process.register(self(), name)
+    server(name_pool)
+  end
+
+  defp server(name_pool) do
+    pid_pool = {:pool, name_pool}
     # Escuchamos peticiones del cliente
     {client, op, limits} =
       receive do
@@ -22,7 +28,7 @@ defmodule Servidor do
       [client, pid_pool, op, Enum.to_list(limits)]
     )
 
-    server()
+    server(name_pool)
   end
 
   def comunicar(pid_client, pool, op, lista) do
@@ -60,7 +66,8 @@ defmodule Servidor do
 end
 
 defmodule Pool do
-  def pool() do
+  def pool(name_pool) do
+    Process.register(self(), name_pool)
   #Las ips de los workers son variables
     lista_disponibles = [
       :"w1@10.1.56.75",

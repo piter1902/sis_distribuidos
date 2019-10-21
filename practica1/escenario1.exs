@@ -65,22 +65,14 @@ defmodule Servidor do
   end
 
   def comunicar(pid_server, pid_w, pid_client, op, limits) do
-    # Generamos el proceso en el nodo y guardamos resultado en la variable resutl
 
-    # Node.spawn(
-    #   pid_w,
-    #   Worker,
-    #   :worker,
-    #   [self(), pid_w, pid_server, op, Enum.to_list(limits)]
-    # )
     Worker.worker(self(), pid_w, pid_server, op, Enum.to_list(limits))
 
     result =
       receive do
         result -> result
       end
-
-
+      
     send(
       pid_client,
       {:fin, result}
