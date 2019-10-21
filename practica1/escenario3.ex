@@ -1,9 +1,9 @@
-# AUTORES: nombres y apellidos
-# NIAs: números de identificacion de los alumnos
-# FICHERO: nombre del fichero
-# FECHA: fecha de realizacion
-# TIEMPO: tiempo en horas de codificación
-# DESCRIPCION: breve descripcion del contenido del fichero
+# AUTORES: Juan José Tambo, Pedro Tamargo
+# NIAs: 755742, 758267
+# FICHERO: escenario3.exs
+# FECHA: 15/10/19
+# TIEMPO: 10 minutos
+# DESCRIPCION: Se desarrolla arquitectura Máster-worker, con pool de workers. La lista de workers a usar es variable.
 
 import Fib
 

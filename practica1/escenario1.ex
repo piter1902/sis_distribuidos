@@ -1,10 +1,9 @@
-# AUTORES: nombres y apellidos
-# NIAs: números de identificacion de los alumnos
-# FICHERO: nombre del fichero
-# FECHA: fecha de realizacion
-# TIEMPO: tiempo en horas de codificación
-# DESCRIPCION: breve descripcion del contenido del fichero
-
+# AUTORES: Juan José Tambo, Pedro Tamargo
+# NIAs: 755742, 758267
+# FICHERO: escenario1.ex
+# FECHA: 15/10/19
+# TIEMPO: 2 horas
+# DESCRIPCION: Se desarrolla arquitectura cliente-servidor. El cliente está implementado en fibonaccis.exs
 import Fib
 
 defmodule Servidor do
