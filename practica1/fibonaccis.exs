@@ -39,7 +39,7 @@ defmodule Fib do
 end
 
 defmodule Cliente do
-  def launch(pid,client_pid, op, 0) do
+  def launch(pid,client_pid, op, 1) do
     send(pid,{client_pid, op, 1..36})
   end
 
@@ -86,7 +86,7 @@ defmodule Cliente do
     receive do
       {:fin, result} -> result
     end
-    
+    IO.puts(inspect(lista))
     recibir()
   end
 

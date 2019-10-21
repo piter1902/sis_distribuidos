@@ -9,6 +9,8 @@ import Fib
 
 defmodule Servidor do
   def server() do
+    Process.register(self(), :master)
+
     lista_disponibles = [
       :"worker@127.0.0.1",
       :"worker@127.0.0.1",
