@@ -61,6 +61,7 @@ end
 
 defmodule Pool do
   def pool() do
+  #Las ips de los workers son variables
     lista_disponibles = [
       :"w1@10.1.56.75",
       :"w2@10.1.56.75",
@@ -95,22 +96,16 @@ defmodule Pool do
               {:ok, head}
             )
 
-            IO.puts("Disponibles ->")
-            IO.puts(inspect(disp))
             {disp, ocu, pend}
           else
             pend = pend ++ [pid]
-            IO.puts("Estamos en el caso de no disponibles -> pend = ")
-            IO.puts(inspect(pend))
             {disp, ocu, pend}
           end
 
         {:fin, pid} ->
-          IO.puts("Nos ha llegado peticion de fin del worker #{pid}")
           # Fin de worker -> anadimos a disponible
           # Comprobamos si hay alguien esperando        
           if pend != [] do
-            IO.puts("Hay algun pendiente despues de dejar worker.")
             # Existe alguien esperando -> Le damos servicio
             [pid_pendiente | resto] = pend
             pend = resto
@@ -123,7 +118,6 @@ defmodule Pool do
             {disp, ocu, pend}
           else
             # Lo devolvemos a la lista de disponibles
-            IO.puts("No hay ningun pendiente despues de dejar worker")
             ocu = ocu -- [pid]
             disp = disp ++ [pid]
             {disp, ocu, pend}

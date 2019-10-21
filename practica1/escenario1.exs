@@ -35,14 +35,12 @@ defmodule Servidor do
             {disp, ocu, pend}
           else
             pend = pend ++ [{client, op, limits}]
-            IO.puts("Estamos en el caso de no disponibles -> pend = ")
-            IO.puts(inspect(pend))
+            
             {disp, ocu, pend}
           end
 
         {:fin, pid_w} ->
           if pend != [] do
-            IO.puts("Hay algun pendiente.")
             # Existe alguien esperando -> Le damos servicio
             [pid_pendiente | resto] = pend
             pend = resto
@@ -57,7 +55,6 @@ defmodule Servidor do
             {disp, ocu, pend}
           else
             # Lo devolvemos a la lista de disponibles
-            IO.puts("No hay ningun pendiente")
             ocu = ocu -- [pid_w]
             disp = disp ++ [pid_w]
             {disp, ocu, pend}
@@ -83,21 +80,18 @@ defmodule Servidor do
         result -> result
       end
 
-    IO.puts(inspect(result))
 
     send(
       pid_client,
       {:fin, result}
     )
 
-    IO.puts("Muerte de comunicar")
   end
 end
 
 defmodule Worker do
   def worker(pid_thread, pid_w, pid_master, op, lista) do
     # Miramos peticion
-    IO.puts("Soy el worker #{pid_w}")
 
     result =
       cond do
@@ -107,7 +101,6 @@ defmodule Worker do
       end
 
     # Nos ponemos disponibles
-    IO.puts("Envio a master que estoy libre")
 
     send(
       pid_master,
