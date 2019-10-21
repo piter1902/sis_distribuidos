@@ -9,7 +9,13 @@ import Fib
 
 defmodule Servidor do
   def server() do
-    lista_disponibles = [:"worker@127.0.0.1", :"worker@127.0.0.1", :"worker@127.0.0.1", :"worker@127.0.0.1"]
+    lista_disponibles = [
+      :"worker@127.0.0.1",
+      :"worker@127.0.0.1",
+      :"worker@127.0.0.1",
+      :"worker@127.0.0.1"
+    ]
+
     lista_ocupados = []
     lista_pendientes = []
     server(lista_disponibles, lista_ocupados, lista_pendientes)
@@ -35,7 +41,7 @@ defmodule Servidor do
             {disp, ocu, pend}
           else
             pend = pend ++ [{client, op, limits}]
-            
+
             {disp, ocu, pend}
           end
 
@@ -65,19 +71,17 @@ defmodule Servidor do
   end
 
   def comunicar(pid_server, pid_w, pid_client, op, limits) do
-
     Worker.worker(self(), pid_w, pid_server, op, Enum.to_list(limits))
 
     result =
       receive do
         result -> result
       end
-      
+
     send(
       pid_client,
       {:fin, result}
     )
-
   end
 end
 

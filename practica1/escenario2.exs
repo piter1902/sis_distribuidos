@@ -67,7 +67,7 @@ end
 defmodule Pool do
   def pool(name_pool) do
     Process.register(self(), name_pool)
-  #Las ips de los workers son variables
+    # Las ips de los workers son variables
     lista_disponibles = [
       :"w1@10.1.56.75",
       :"w2@10.1.56.75",
