@@ -1,0 +1,36 @@
+iex(27)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+349
+iex(28)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+409
+iex(29)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+385
+iex(30)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+387
+iex(31)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+390
+iex(32)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+357
+iex(33)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+378
+iex(34)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+366
+iex(35)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+407
+iex(36)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+410
+iex(37)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+389
+iex(38)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+384
+iex(39)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+371
+iex(40)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+416
+iex(41)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+393
+iex(42)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+409
+iex(43)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+405
+iex(44)> t1=Time.utc_now; Enum.map(Enum.to_list(1..36), fn x -> Fib.fibonacci_tr x end); t2 = Time.diff(Time.utc_now,t1, :microsecond)
+380

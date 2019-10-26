@@ -76,14 +76,7 @@ defmodule Servidor do
     #   :worker,
     #   [self(), pid_w, pid_server, op, Enum.to_list(limits)]
     # )
-    IO.puts("Soy comunicar y como valores tengo:")
-    IO.puts(inspect(pid_server))
-    IO.puts(inspect(pid_w))
-    IO.puts(inspect(pid_client))
-    IO.puts(inspect(op))
-    IO.puts(inspect(limits))
-    IO.puts(inspect(time))
-    IO.puts(inspect(nEnvio))
+    
     Worker.worker(self(), pid_w, pid_server, op, Enum.to_list(limits))
 
     result =
@@ -91,7 +84,7 @@ defmodule Servidor do
         result -> result
       end
 
-    IO.puts(inspect(pid_client))
+    
 
     send(
       pid_client,

@@ -1,0 +1,80 @@
+Al envio 1, le ha costado:
+1429364
+Al envio 2, le ha costado:
+1457875
+Al envio 3, le ha costado:
+1424338
+Al envio 4, le ha costado:
+1518271
+Al envio 5, le ha costado:
+1404649
+Al envio 6, le ha costado:
+1403781
+Al envio 7, le ha costado:
+1422464
+Al envio 8, le ha costado:
+1425713
+Al envio 9, le ha costado:
+1424515
+Al envio 10, le ha costado:
+1427524
+Al envio 11, le ha costado:
+1415792
+Al envio 12, le ha costado:
+1560751
+Al envio 13, le ha costado:
+1553369
+Al envio 14, le ha costado:
+1568440
+Al envio 15, le ha costado:
+1533255
+Al envio 16, le ha costado:
+1567914
+Al envio 17, le ha costado:
+1536879
+Al envio 18, le ha costado:
+1529916
+Al envio 19, le ha costado:
+1568281
+Al envio 20, le ha costado:
+1535275
+Al envio 21, le ha costado:
+1541852
+Al envio 22, le ha costado:
+1543486
+Al envio 23, le ha costado:
+1567944
+Al envio 24, le ha costado:
+1532664
+Al envio 25, le ha costado:
+1550897
+Al envio 26, le ha costado:
+1423496
+Al envio 27, le ha costado:
+1433700
+Al envio 28, le ha costado:
+1455871
+Al envio 29, le ha costado:
+1489474
+Al envio 30, le ha costado:
+1427450
+Al envio 31, le ha costado:
+1443218
+Al envio 32, le ha costado:
+1512475
+Al envio 33, le ha costado:
+1435428
+Al envio 34, le ha costado:
+1518433
+Al envio 35, le ha costado:
+1527104
+Al envio 36, le ha costado:
+1527776
+Al envio 37, le ha costado:
+1528206
+Al envio 38, le ha costado:
+1535874
+Al envio 39, le ha costado:
+1412590
+Al envio 40, le ha costado:
+1436390
