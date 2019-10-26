@@ -9,42 +9,152 @@ import Fib
 
 defmodule Servidor do
   def server() do
+    pid_pool = {:pool, :"pool@10.1.59.57"}
     # Escuchamos peticiones del cliente
+    {client, op, limits} =
+      receive do
+        {client, op, limits,time,nEnvio} -> {client, op, limits,time,nEnvio}
+      end
 
-    # Enviamos la peticion al pool
+    spawn(
+      Servidor,
+      :comunicar,
+      [client, pid_pool, op, Enum.to_list(limits),time,nEnvio]
+    )
 
-    # Enviamos respuesta a cliente
     server()
+  end
+
+  def comunicar(pid_client, pool, op, lista,time,nEnvio) do
+    # Pide worker al pool
+    send(
+      pool,
+      {:peti, self()}
+    )
+
+    # Recibimos el worker con el que trabajaremos
+    pid_w =
+      receive do
+        {:ok, pid_w} -> pid_w
+      end
+
+    # Generamos el proceso en el nodo y guardamos resultado en la variable resutl
+
+    Node.spawn(
+      pid_w,
+      Worker,
+      :worker,
+      [self(), pid_w, pool, op, lista]
+    )
+
+    result =
+      receive do
+        result -> result
+      end
+
+    send(
+      pid_client,
+      {:fin, result,time,nEnvio}
+    )
   end
 end
 
 defmodule Pool do
   def pool() do
-    lista_disponibles = []
-    spawn(:escucharPeticiones, lista_disponibles)
-    pool(lista_disponibles)
+    lista_disponibles = [
+      :"w1@10.1.56.75",
+      :"w2@10.1.56.75",
+      :"w1@10.1.56.75",
+      :"w2@10.1.56.75",
+      :"w1@10.1.56.75",
+      :"w2@10.1.56.75",
+      :"w1@10.1.56.75",
+      :"w2@10.1.56.75"
+    ]
+
+    lista_ocupados = []
+    lista_pendientes = []
+
+    pool(lista_disponibles, lista_ocupados, lista_pendientes)
   end
 
-  defp pool(list) do
+  defp pool(disp, ocu, pend) do
     # Esperamos una peticion del master
+    {disp, ocu, pend} =
+      receive do
+        {:peti, pid} ->
+          if disp != [] do
+            [head | tail] = disp
+            disp = tail
 
-    # Enviamos un worker al master
+            # Marcamos al worker que enviamos como ocupado
+            ocu = ocu ++ [head]
+            # Enviamos un worker al master
+            send(
+              pid,
+              {:ok, head}
+            )
 
-    pool(list)
-  end
+            IO.puts("Disponibles ->")
+            IO.puts(inspect(disp))
+            {disp, ocu, pend}
+          else
+            pend = pend ++ [pid]
+            IO.puts("Estamos en el caso de no disponibles -> pend = ")
+            IO.puts(inspect(pend))
+            {disp, ocu, pend}
+          end
 
-  def escucharPeticiones(list) do
-    escucharPeticiones(list)
+        {:fin, pid} ->
+          IO.puts("Nos ha llegado peticion de fin del worker #{pid}")
+          # Fin de worker -> anadimos a disponible
+          # Comprobamos si hay alguien esperando        
+          if pend != [] do
+            IO.puts("Hay algun pendiente despues de dejar worker.")
+            # Existe alguien esperando -> Le damos servicio
+            [pid_pendiente | resto] = pend
+            pend = resto
+
+            send(
+              pid_pendiente,
+              {:ok, pid}
+            )
+
+            {disp, ocu, pend}
+          else
+            # Lo devolvemos a la lista de disponibles
+            IO.puts("No hay ningun pendiente despues de dejar worker")
+            ocu = ocu -- [pid]
+            disp = disp ++ [pid]
+            {disp, ocu, pend}
+          end
+      end
+
+    pool(disp, ocu, pend)
   end
 end
 
 defmodule Worker do
-  def worker() do
+  def worker(pid_master, pid_w, pid_p, op, lista) do
     # Miramos peticion
-
-    # Esperamos a una peticion del pool
+    result =
+      cond do
+        op == :fib -> Enum.map(lista, fn x -> Fib.fibonacci(x) end)
+        op == :fib_tr -> Enum.map(lista, fn x -> Fib.fibonacci_tr(x) end)
+        op == :of -> Enum.map(lista, fn x -> Fib.of(x) end)
+      end
 
     # Nos ponemos disponibles
-    worker()
+
+    send(
+      pid_p,
+      {:fin, pid_w}
+    )
+
+    # Devolvemos resultado -> Enviando a master
+    send(
+      pid_master,
+      result
+    )
   end
 end
