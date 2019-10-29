@@ -57,7 +57,7 @@ defmodule LectEscrit do
 		send(
 			process,
 			{:request,myTime, self(),op_type}
-			)
+		)
 		 lista_proc = List.delete_at(lista_proc,1)	#Eliminamos ese proceso de la lista
 		 if lista_proc != [] do
 		 	send_petition(lista_proc,myTime,op_type)
