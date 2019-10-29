@@ -27,17 +27,18 @@ end
 defmodule LectEscrit do
 	#Type indica si lector o escritor
 	def init(op_type) do
-		procesos = [. . .] #ya hablaremos de como hacemos esto
+		procesos = [] #ya hablaremos de como hacemos esto
 		procesos_espera = [] #La uso para el perm_delayed
 		myTime = Time.utc_now()  #Cogemos marca temporal de la peticion
 		pid_thread = spawn(LectEscrit,:receive_petition,[procesos_espera,myTime,op_type]) #Thread encargado de escuchar las REQUEST de los demás procesos
-		begin_op(op_type,procesos)
+		begin_op(op_type,procesos,myTime)
 		end_op(pid_thread)
 	end
 
-	def begin_op(op_type,procesos) do
+	def begin_op(op_type,procesos, myTime) do
+		myTime = myTime + 1
 		send_petition(procesos,myTime,op_type) #Hacemos REQUEST
-		receive_permission(lista_proc)	#Esperamos confirmación de todos procesos 
+		receive_permission(procesos)	#Esperamos confirmación de todos procesos 
 		#Se supone que estamos dentro
 	end
 	
@@ -88,9 +89,10 @@ defmodule LectEscrit do
 	# *Peticion de mi proceso padre de que necesita la lista de procesos_bloqueados, con lo que se la enviare
 	# *Mensajes de REQUEST del resto de procesos.
 	defp receive_petition(procesos_espera,myTime,myOp) do
+		exclude = [[]]
 		receive do
 			{:request,other_time, pid, other_op} ->
-				prio = (other_time > myTime) && (exclude[myOp,other_op]) #Falta comprobar el estado(out,in)
+				prio = (other_time > myTime) && (exclude[myOp][other_op]) #Falta comprobar el estado(out,in)
 				if prio do
 					procesos_espera = procesos_espera ++ pid
 				else #En caso contrario, mandamos PERMISSION
