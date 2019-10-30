@@ -37,7 +37,7 @@ defmodule LectEscrit do
 		#Procedemos a recibir el valor de "estado"
 		estado =
 		receive do
-			{:state, estado} -> esatdo
+			{:state, estado} -> estado
 		end
 		end_op(pid_thread,estado,pid_servidor)	
 	end
@@ -164,7 +164,7 @@ defmodule LectEscrit do
 						{:ok,self()}
 					)
 				end
-				receive_petition(procesos_espera,myTime,myOp) #Llamada recursiva
+				receive_petition(procesos_espera,myTime,myOp,pid_servidor) #Llamada recursiva
 			
 			{:fin_operacion} ->
 				#Hemos recibido indicación de acabar
@@ -174,30 +174,31 @@ defmodule LectEscrit do
 	defp server_variables(procesos_espera, estado, myTime) do
 		receive do
 			{:get, var, pid} ->
-				case do
-					var == :procesos ->
+				case var do
+					:procesos ->
 						send(
 							pid,
 							{:ack, procesos_espera}
 						)
-					var == :estado ->
+					:estado ->
 						send(
 							pid,
 							{:ack, estado}
 						) 
-					var == :tiempo ->
+					:tiempo ->
 						send(
+							pid,
 							{:ack, myTime}
 						)
 				end
 				server_variables(procesos_espera, estado, myTime)
 			{:set, var, nuevo_valor} ->
-				case do
-					var == :procesos ->
+				case var do
+					:procesos ->
 						procesos_espera = nuevo_valor
-					var == :estado ->
+					:estado ->
 						estado = nuevo_valor
-					var == :tiempo ->
+					:tiempo ->
 						myTime = nuevo_valor
 				end
 				server_variables(procesos_espera, estado, myTime)
