@@ -39,63 +39,78 @@ defmodule Fib do
 end
 
 defmodule Cliente do
-  def launch(pid,client_pid, op, 1) do
-    send(pid,{client_pid, op, 1..36})
+  def launch(pid,client_pid, op, 1,nEnvio) do
+    t1 = Time.utc_now()
+    send(pid,{client_pid, op, 1..36,t1,nEnvio})
   end
 
-  def launch(pid,client_pid, op, n) when n != 1 do
-    send(pid,{client_pid,op, 1..36})
-    launch(pid,client_pid, op, n - 1)
+  def launch(pid,client_pid, op, n,nEnvio) when n != 1 do
+    t1 = Time.utc_now()
+    send(pid,{client_pid,op, 1..36,t1,nEnvio})
+    nEnvio = nEnvio+1
+    launch(pid,client_pid, op, n - 1,nEnvio)
   end
 
-  def genera_workload(server_pid,client_pid, escenario, time) do
-    cond do
-      time <= 3 ->
-        launch(server_pid,client_pid, :fib, 8)
-        Process.sleep(2000)
+  def genera_workload(server_pid,client_pid, escenario, time,nEnvio) do
+     cond do
+       time <= 3 ->
+         launch(server_pid,client_pid, :fib, 8,nEnvio)
+         Process.sleep(2000)
 
-      time == 4 ->
-        launch(server_pid,client_pid, :fib, 8)
-        Process.sleep(round(:rand.uniform(100) / 100 * 2000))
+       time == 4 ->
+         launch(server_pid,client_pid, :fib, 8,nEnvio)
+         Process.sleep(round(:rand.uniform(100) / 100 * 2000))
 
-      time <= 8 ->
-        launch(server_pid,client_pid, :fib, 8)
-        Process.sleep(round(:rand.uniform(100) / 1000 * 2000))
+       time <= 8 ->
+         launch(server_pid,client_pid, :fib, 8,nEnvio)
+         Process.sleep(round(:rand.uniform(100) / 1000 * 2000))
 
-      time == 9 ->
-        launch(server_pid,client_pid, :fib_tr, 8)
-        Process.sleep(round(:rand.uniform(2) / 2 * 2000))
-    end
+       time == 9 ->
+         launch(server_pid,client_pid, :fib_tr, 8,nEnvio)
+         Process.sleep(round(:rand.uniform(2) / 2 * 2000))
+     end
 
-    genera_workload(server_pid,client_pid, escenario, rem(time + 1, 10))
-  end
+     genera_workload(server_pid,client_pid, escenario, rem(time + 1, 10),nEnvio+8)
+   end
 
-  def genera_workload(server_pid,client_pid, escenario) do
+  def genera_workload(server_pid,client_pid, escenario,nEnvio) do
     if escenario == 1 do
-      launch(server_pid,client_pid, :fib, 1)
+      launch(server_pid,client_pid, :fib, 1,nEnvio)
+      nEnvio = nEnvio + 1
     else
-      launch(server_pid,client_pid, :fib, 4)
+      launch(server_pid,client_pid, :fib, 4,nEnvio)
+      nEnvio = nEnvio + 4
     end
 
     Process.sleep(2000)
-    genera_workload(server_pid,client_pid, escenario)
+    genera_workload(server_pid,client_pid, escenario,nEnvio)
   end
 
   def recibir() do
-    lista=
+    #IO.puts("Procedemos a recibir en cliente")
+    
     receive do
-      {:fin, result} -> result
+      {:fin, lista,t1,nEnvio} ->  {lista,t1,nEnvio}
+      t2 = Time.utc_now()
+     
+      IO.puts("Al envio #{nEnvio}, le ha costado:")
+      IO.puts(inspect(Time.diff(t2, t1, :microsecond)))    
     end
-    IO.puts(inspect(lista))
+    
+    #IO.puts(inspect(lista))
+    
     recibir()
   end
 
   def cliente(server_pid, tipo_escenario) do
+  
   pid = spawn(Cliente, :recibir, [])
+  IO.puts("pid:")
+  IO.puts(inspect(pid))  
     case tipo_escenario do
-      :uno -> genera_workload(server_pid, pid, 1)
-      :dos -> genera_workload(server_pid, pid, 2)
-      :tres -> genera_workload(server_pid, pid, 3, 1)
+      :uno -> genera_workload(server_pid, pid, 1,1)
+      :dos -> genera_workload(server_pid, pid, 2,1)
+      :tres -> genera_workload(server_pid, pid, 3, 1,1)
     end
   end
 end

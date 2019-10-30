@@ -1,22 +1,15 @@
-# AUTORES: Juan José Tambo, Pedro Tamargo
-# NIAs: 755742, 758267
-# FICHERO: escenario1.ex
-# FECHA: 15/10/19
-# TIEMPO: 2 horas
-# DESCRIPCION: Se desarrolla arquitectura cliente-servidor. El cliente está implementado en fibonaccis.exs
+# AUTORES: nombres y apellidos
+# NIAs: números de identificacion de los alumnos
+# FICHERO: nombre del fichero
+# FECHA: fecha de realizacion
+# TIEMPO: tiempo en horas de codificación
+# DESCRIPCION: breve descripcion del contenido del fichero
+
 import Fib
 
 defmodule Servidor do
   def server() do
-    Process.register(self(), :master)
-
-    lista_disponibles = [
-      :"worker@127.0.0.1",
-      :"worker@127.0.0.1",
-      :"worker@127.0.0.1",
-      :"worker@127.0.0.1"
-    ]
-
+    lista_disponibles = [:"worker@127.0.0.1", :"worker@127.0.0.1", :"worker@127.0.0.1", :"worker@127.0.0.1"]
     lista_ocupados = []
     lista_pendientes = []
     server(lista_disponibles, lista_ocupados, lista_pendientes)
@@ -27,7 +20,7 @@ defmodule Servidor do
     # Escuchamos peticiones del cliente
     {disp, ocu, pend} =
       receive do
-        {client, op, limits} ->
+        {client, op, limits,time,nEnvio} ->
           if disp != [] do
             [head | tail] = disp
             disp = tail
@@ -36,32 +29,35 @@ defmodule Servidor do
             spawn(
               Servidor,
               :comunicar,
-              [self(), head, client, op, limits]
+              [self(), head, client, op, limits,time,nEnvio]
             )
 
             {disp, ocu, pend}
           else
-            pend = pend ++ [{client, op, limits}]
-
+            pend = pend ++ [{client, op, limits,time,nEnvio}]
+            IO.puts("Estamos en el caso de no disponibles -> pend = ")
+            IO.puts(inspect(pend))
             {disp, ocu, pend}
           end
 
         {:fin, pid_w} ->
           if pend != [] do
+            IO.puts("Hay algun pendiente.")
             # Existe alguien esperando -> Le damos servicio
             [pid_pendiente | resto] = pend
             pend = resto
-            {cliente, op, limits} = pid_pendiente
+            {cliente, op, limits,time,nEnvio} = pid_pendiente
 
             spawn(
               Servidor,
               :comunicar,
-              [self(), pid_w, cliente, op, limits]
+              [self(), pid_w, cliente, op, limits,time,nEnvio]
             )
 
             {disp, ocu, pend}
           else
             # Lo devolvemos a la lista de disponibles
+            IO.puts("No hay ningun pendiente")
             ocu = ocu -- [pid_w]
             disp = disp ++ [pid_w]
             {disp, ocu, pend}
@@ -71,7 +67,23 @@ defmodule Servidor do
     server(disp, ocu, pend)
   end
 
-  def comunicar(pid_server, pid_w, pid_client, op, limits) do
+  def comunicar(pid_server, pid_w, pid_client, op, limits,time,nEnvio) do
+    # Generamos el proceso en el nodo y guardamos resultado en la variable resutl
+
+    # Node.spawn(
+    #   pid_w,
+    #   Worker,
+    #   :worker,
+    #   [self(), pid_w, pid_server, op, Enum.to_list(limits)]
+    # )
+    IO.puts("Soy comunicar y como valores tengo:")
+    IO.puts(inspect(pid_server))
+    IO.puts(inspect(pid_w))
+    IO.puts(inspect(pid_client))
+    IO.puts(inspect(op))
+    IO.puts(inspect(limits))
+    IO.puts(inspect(time))
+    IO.puts(inspect(nEnvio))
     Worker.worker(self(), pid_w, pid_server, op, Enum.to_list(limits))
 
     result =
@@ -79,16 +91,21 @@ defmodule Servidor do
         result -> result
       end
 
+    IO.puts(inspect(pid_client))
+
     send(
       pid_client,
-      {:fin, result}
+      {:fin, result,time,nEnvio}
     )
+
+    IO.puts("Muerte de comunicar")
   end
 end
 
 defmodule Worker do
   def worker(pid_thread, pid_w, pid_master, op, lista) do
     # Miramos peticion
+    IO.puts("Soy el worker #{pid_w}")
 
     result =
       cond do
@@ -98,6 +115,7 @@ defmodule Worker do
       end
 
     # Nos ponemos disponibles
+    IO.puts("Envio a master que estoy libre")
 
     send(
       pid_master,

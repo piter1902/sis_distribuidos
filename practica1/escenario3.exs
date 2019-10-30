@@ -1,36 +1,36 @@
-# AUTORES: Juan José Tambo, Pedro Tamargo
-# NIAs: 755742, 758267
-# FICHERO: escenario3.exs
-# FECHA: 15/10/19
-# TIEMPO: 10 minutos
-# DESCRIPCION: Se desarrolla arquitectura Máster-worker, con pool de workers. La lista de workers a usar es variable.
+# AUTORES: nombres y apellidos
+# NIAs: números de identificacion de los alumnos
+# FICHERO: nombre del fichero
+# FECHA: fecha de realizacion
+# TIEMPO: tiempo en horas de codificación
+# DESCRIPCION: breve descripcion del contenido del fichero
 
 import Fib
 
 defmodule Servidor do
-  def server(dir_pool) do
-    Process.register(self(),:master)
-    server_p(dir_pool)
+  def server(name_pool) do
+    Process.register(self(), :master)
+    server_p(name_pool)
   end
 
-  defp server_p(dir_pool) do
-    pid_pool = {:pool, dir_pool}
+  defp server_p(name_pool) do
+    pid_pool = {:pool, name_pool}
     # Escuchamos peticiones del cliente
-    {client, op, limits,time, nEnvio} =
+    {client, op, limits} =
       receive do
-        {client, op, limits,time,nEnvio} -> {client, op, limits,time,nEnvio}
+        {client, op, limits} -> {client, op, limits}
       end
 
     spawn(
       Servidor,
       :comunicar,
-      [client, pid_pool, op, Enum.to_list(limits),time,nEnvio]
+      [client, pid_pool, op, Enum.to_list(limits)]
     )
 
-    server_p(dir_pool)
+    server_p(name_pool)
   end
 
-  def comunicar(pid_client, pool, op, lista,time,nEnvio) do
+  def comunicar(pid_client, pool, op, lista) do
     # Pide worker al pool
     send(
       pool,
@@ -59,14 +59,15 @@ defmodule Servidor do
 
     send(
       pid_client,
-      {:fin, result,time,nEnvio}
+      {:fin, result}
     )
   end
 end
 
 defmodule Pool do
   def pool() do
-    Process.register(self(),:pool)
+    Process.register(self(), :pool)
+    # Las ips de los workers son variables
     lista_disponibles = [
       :"w1@155.210.154.198",
       :"w1@155.210.154.198",
