@@ -32,17 +32,24 @@ defmodule LectEscrit do
 		myTime = Time.utc_now()  #Cogemos marca temporal de la peticion
 		estado = :out
 		pid_servidor = spawn(LectEscrit,:server_variables,[procesos_espera, estado, myTime])
-		pid_thread = spawn(LectEscrit,:receive_petition,[procesos_espera,myTime,op_type,pid_servidor]) #Thread encargado de escuchar las REQUEST de los demás procesos
-		begin_op(op_type,procesos,myTime,estado,pid_servidor)
-		#Procedemos a recibir el valor de "estado"
-		estado =
+		pid_thread = spawn(LectEscrit,:receive_petition,[procesos_espera,op_type,pid_servidor]) #Thread encargado de escuchar las REQUEST de los demás procesos
+		begin_op(op_type,procesos,pid_servidor)
+		
+		send(
+			pid_servidor,
+			{:get,:tiempo,self()}
+		)
+		myTime =
 		receive do
-			{:state, estado} -> estado
+			{:ack, myTime} -> myTime
 		end
-		end_op(pid_thread,estado,pid_servidor)	
+		IO.puts(myTime)
+		Process.sleep(1000)
+		#No se pasa estado como parámetro ya que siempre se pone a "out" al llegar a end_op
+		end_op(pid_thread,pid_servidor)	
 	end
 
-	defp begin_op(op_type,procesos, myTime,estado,pid_servidor) do
+	defp begin_op(op_type,procesos,pid_servidor) do
 		send(
 			pid_servidor,
 			{:get,:tiempo,self()}
@@ -56,7 +63,7 @@ defmodule LectEscrit do
 			pid_servidor,
 			{:set,:tiempo,myTime}
 		)
-		send_petition(procesos,myTime,op_type) #Hacemos REQUEST
+		send_petition(procesos,myTime,op_type,pid_servidor) #Hacemos REQUEST
 		receive_permission(procesos)	#Esperamos confirmación de todos procesos
 		estado = :in
 		#Actualizamos valor a servidor de variables
@@ -67,7 +74,13 @@ defmodule LectEscrit do
 		#Se supone que estamos dentro
 	end
 	
-	defp end_op(pid_thread,estado,pid_servidor) do
+	defp end_op(pid_thread,pid_servidor) do
+		estado = :out
+		#Actualizamos valor de estado en servidor de variables
+		send(
+			pid_servidor,
+			{:set,:estado, estado}
+		)
 		#Pedimos al thread que nos proporcione la lista de delayed
 		send(
 			pid_servidor,
@@ -88,7 +101,17 @@ defmodule LectEscrit do
 		)
 	end
 
-	defp send_petition(lista_proc,myTime,op_type) do
+	defp send_petition(lista_proc,myTime,op_type,pid_servidor) do
+		#Consultamos valor de myTime a servidor de variables
+		send(
+			pid_servidor,
+			{:get,:tiempo,self()}
+		)
+		myTime =
+		receive do
+			{:ack, myTime} -> myTime
+		end
+		#Enviamos request a cada uno de los procesos 
 		process = List.first(lista_proc) #Cogemos el primer proceso de la lista
 		send(
 			process,
@@ -96,7 +119,7 @@ defmodule LectEscrit do
 		)
 		 lista_proc = List.delete_at(lista_proc,1)	#Eliminamos ese proceso de la lista
 		 if lista_proc != [] do
-		 	send_petition(lista_proc,myTime,op_type)
+		 	send_petition(lista_proc,myTime,op_type,pid_servidor)
 		end
 	end
 
@@ -111,6 +134,7 @@ defmodule LectEscrit do
 			receive_permission(lista_proc)
 		end
 	end
+
 	defp receive_permission(lista_proc) do
 		receive do
 			{:ok,pid} -> lista_proc = List.delete(lista_proc,pid) #Recibimos confirmacion de todos procesos y eliminamos de la lista
@@ -123,8 +147,8 @@ defmodule LectEscrit do
 	#En esta función puedo recibir dos tipos de mensaje:
 	# *Peticion de mi proceso padre de que necesita la lista de procesos_espera con lo que se la enviare
 	# *Mensajes de REQUEST del resto de procesos.
-	defp receive_petition(procesos_espera,myTime,myOp,pid_servidor) do
-		exclude = [[]]
+	defp receive_petition(procesos_espera,myOp,pid_servidor) do
+		exclude = %{read: %{read: true, write: false}, write: %{read: false, write: false}}
 		receive do
 			{:request,other_time, pid, other_op} ->
 				send(
@@ -164,7 +188,7 @@ defmodule LectEscrit do
 						{:ok,self()}
 					)
 				end
-				receive_petition(procesos_espera,myTime,myOp,pid_servidor) #Llamada recursiva
+				receive_petition(procesos_espera,myOp,pid_servidor) #Llamada recursiva
 			
 			{:fin_operacion} ->
 				#Hemos recibido indicación de acabar
