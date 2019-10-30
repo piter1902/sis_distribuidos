@@ -26,8 +26,7 @@ end
 
 defmodule LectEscrit do
 	#Type indica si lector o escritor
-	def init(op_type) do
-		procesos = [] #ya hablaremos de como hacemos esto
+	def init(op_type, procesos) do
 		procesos_espera = [] #La uso para el perm_delayed
 		myTime = Time.utc_now()  #Cogemos marca temporal de la peticion
 		estado = :out
