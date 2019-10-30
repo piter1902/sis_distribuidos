@@ -30,27 +30,62 @@ defmodule LectEscrit do
 		procesos = [] #ya hablaremos de como hacemos esto
 		procesos_espera = [] #La uso para el perm_delayed
 		myTime = Time.utc_now()  #Cogemos marca temporal de la peticion
-		pid_thread = spawn(LectEscrit,:receive_petition,[procesos_espera,myTime,op_type]) #Thread encargado de escuchar las REQUEST de los demás procesos
-		begin_op(op_type,procesos,myTime)
-		end_op(pid_thread)
+		estado = :out
+		pid_servidor = spawn(LectEscrit,:server_variables,[procesos_espera, estado, myTime])
+		pid_thread = spawn(LectEscrit,:receive_petition,[procesos_espera,myTime,op_type,pid_servidor]) #Thread encargado de escuchar las REQUEST de los demás procesos
+		begin_op(op_type,procesos,myTime,estado,pid_servidor)
+		#Procedemos a recibir el valor de "estado"
+		estado =
+		receive do
+			{:state, estado} -> esatdo
+		end
+		end_op(pid_thread,estado,pid_servidor)	
 	end
 
-	def begin_op(op_type,procesos, myTime) do
+	defp begin_op(op_type,procesos, myTime,estado,pid_servidor) do
+		send(
+			pid_servidor,
+			{:get,:tiempo,self()}
+		)
+		myTime =
+		receive do
+			{:ack, myTime} -> myTime
+		end
 		myTime = myTime + 1
+		send(
+			pid_servidor,
+			{:set,:tiempo,myTime}
+		)
 		send_petition(procesos,myTime,op_type) #Hacemos REQUEST
-		receive_permission(procesos)	#Esperamos confirmación de todos procesos 
+		receive_permission(procesos)	#Esperamos confirmación de todos procesos
+		estado = :in
+		#Actualizamos valor a servidor de variables
+		send(
+			pid_servidor,
+			{:set,:estado,estado}
+		)
 		#Se supone que estamos dentro
 	end
 	
-	defp end_op(pid_thread) do
+	defp end_op(pid_thread,estado,pid_servidor) do
 		#Pedimos al thread que nos proporcione la lista de delayed
 		send(
-			pid_thread,
-			{:req_delayed,self()}
+			pid_servidor,
+			{:get,:procesos,self()}
 		)
-		receive do #Enviamos permiso a todos que teniamos en delayed
-			{:rep_delayed,lista_proc} -> send_permission(lista_proc)
+		receive do
+			{:ack,procesos_espera} -> send_permission(procesos_espera)
 		end
+		#Hacemos que thread "receive_petition" acabe
+		send(
+			pid_thread,
+			{:fin_operacion}
+		)
+		#Hacemos que servidor de variables acabe
+		send(
+			pid_servidor,
+			{:fin_operacion}
+		)
 	end
 
 	defp send_petition(lista_proc,myTime,op_type) do
@@ -86,15 +121,43 @@ defmodule LectEscrit do
 	end
 
 	#En esta función puedo recibir dos tipos de mensaje:
-	# *Peticion de mi proceso padre de que necesita la lista de procesos_bloqueados, con lo que se la enviare
+	# *Peticion de mi proceso padre de que necesita la lista de procesos_espera con lo que se la enviare
 	# *Mensajes de REQUEST del resto de procesos.
-	defp receive_petition(procesos_espera,myTime,myOp) do
+	defp receive_petition(procesos_espera,myTime,myOp,pid_servidor) do
 		exclude = [[]]
 		receive do
 			{:request,other_time, pid, other_op} ->
-				prio = (other_time > myTime) && (exclude[myOp][other_op]) #Falta comprobar el estado(out,in)
+				send(
+					pid_servidor,
+					{:get,:tiempo,self()}
+				)
+				myTime=
+				receive do
+					{:ack,myTime} -> myTime
+				end
+				myTime = Enum.max([myTime,other_time])
+				#Actualizamos valor a servidor de variables
+				send(
+					pid_servidor,
+					{:set,:tiempo,myTime}
+				)
+				#Pedimos valor del estado a servidor de variables
+				send(
+					pid_servidor,
+					{:get,:estado,self()}
+				)
+				estado=
+				receive do
+					{:ack,estado} -> estado
+				end
+				prio = (estado != :out) && (other_time > myTime) && (exclude[myOp][other_op]) #Falta comprobar el estado(out,in)
 				if prio do
 					procesos_espera = procesos_espera ++ pid
+					#Actualizamos valor a servidor de variables
+					send(
+						pid_servidor,
+						{:set,:procesos, procesos_espera}
+					)
 				else #En caso contrario, mandamos PERMISSION
 					send(
 						pid,
@@ -102,13 +165,44 @@ defmodule LectEscrit do
 					)
 				end
 				receive_petition(procesos_espera,myTime,myOp) #Llamada recursiva
+			
+			{:fin_operacion} ->
+				#Hemos recibido indicación de acabar
+		end
+	end
 
-			{:req_delayed, pid} ->
-				send(
-					pid,
-					{:rep_delayed,procesos_espera}
-				)
-				#Supongo que ya moriría el proceso.
+	defp server_variables(procesos_espera, estado, myTime) do
+		receive do
+			{:get, var, pid} ->
+				case do
+					var == :procesos ->
+						send(
+							pid,
+							{:ack, procesos_espera}
+						)
+					var == :estado ->
+						send(
+							pid,
+							{:ack, estado}
+						) 
+					var == :tiempo ->
+						send(
+							{:ack, myTime}
+						)
+				end
+				server_variables(procesos_espera, estado, myTime)
+			{:set, var, nuevo_valor} ->
+				case do
+					var == :procesos ->
+						procesos_espera = nuevo_valor
+					var == :estado ->
+						estado = nuevo_valor
+					var == :tiempo ->
+						myTime = nuevo_valor
+				end
+				server_variables(procesos_espera, estado, myTime)
+
+			{:fin_operacion} ->
 		end
 	end
 end
