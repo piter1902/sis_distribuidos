@@ -27,13 +27,13 @@ end
 defmodule LectEscrit do
 	#Type indica si lector o escritor
 	def init(op_type, procesos) do
+		procesos = procesar_lista(procesos, Node.self)
 		conectarTodos(procesos)
 		procesos_espera = [] #La uso para el perm_delayed
 		myTime = Time.utc_now()  #Cogemos marca temporal de la peticion
 		estado = :out
 		pid_servidor = spawn(LectEscrit,:server_variables,[procesos_espera, estado, myTime])
 		pid_thread = spawn(LectEscrit,:receive_petition,[procesos_espera,op_type,pid_servidor]) #Thread encargado de escuchar las REQUEST de los demás procesos
-		IO.puts("Espero en begin_op")
 		begin_op(op_type,procesos,pid_servidor)
 		IO.puts("Estoy en SC #{Node.self}")
 		send(
@@ -50,6 +50,21 @@ defmodule LectEscrit do
 		end_op(pid_thread,pid_servidor)	
 	end
 
+	def procesar_lista(procesos, comparar) do
+		if procesos != [] do
+			[{at, nodo} | resto] = procesos
+			procesos = resto
+			if nodo != comparar do
+				# Lo añadimos a la lista
+				[{at, nodo}] ++ procesar_lista(resto, comparar)
+			else
+				procesar_lista(resto, comparar)
+			end
+		else
+			[]
+		end
+	end
+
 	def conectarTodos(procesos) when procesos == [] do
 		IO.puts("Conectado a todos")
 		IO.puts(inspect(Node.list()))
@@ -64,6 +79,7 @@ defmodule LectEscrit do
 	end
 
 	def begin_op(op_type,procesos,pid_servidor) do
+		IO.puts("Inicio begin_op")
 		send(
 			pid_servidor,
 			{:get,:tiempo,self()}
@@ -73,7 +89,9 @@ defmodule LectEscrit do
 			{:ack, myTime} -> myTime
 		end
 		#myTime = myTime + 1
-		Time.add(myTime, 1)
+		IO.puts("Tiempo recibido: #{myTime}")
+		myTime = Time.add(myTime, 1)
+		IO.puts("Tiempo cambiado: #{myTime}")
 		send(
 			pid_servidor,
 			{:set,:tiempo,myTime}
@@ -81,6 +99,7 @@ defmodule LectEscrit do
 		send_petition(procesos,op_type,pid_servidor) #Hacemos REQUEST
 		receive_permission(procesos)	#Esperamos confirmación de todos procesos
 		estado = :in
+		IO.puts("Estado: #{estado}")
 		#Actualizamos valor a servidor de variables
 		send(
 			pid_servidor,
@@ -118,6 +137,7 @@ defmodule LectEscrit do
 
 	def send_petition(lista_proc,op_type,pid_servidor) do
 		#Consultamos valor de myTime a servidor de variables
+		IO.puts("send_petition")
 		send(
 			pid_servidor,
 			{:get,:tiempo,self()}
@@ -126,17 +146,20 @@ defmodule LectEscrit do
 		receive do
 			{:ack, myTime} -> myTime
 		end
+		IO.puts("Tiempo en send_petition:")
 		IO.puts(inspect(myTime))
 		#Enviamos request a cada uno de los procesos 
-		#process = List.first(lista_proc) #Cogemos el primer proceso de la lista
+		#Cogemos el primer proceso de la lista
 		[process | resto] = lista_proc
+		#Eliminamos ese proceso de la lista
 		lista_proc = resto
 		send(
 			process,
 			{:request,myTime, self(),op_type}
 		)
-		# lista_proc = List.delete_at(lista_proc,1)	#Eliminamos ese proceso de la lista
-		 if lista_proc != [] do
+		{_, proc} = process
+		IO.puts("Peticion enviada a #{proc}")
+		if lista_proc != [] do
 		 	send_petition(lista_proc,op_type,pid_servidor)
 		end
 	end
@@ -216,32 +239,40 @@ defmodule LectEscrit do
 	def server_variables(procesos_espera, estado, myTime) do
 		receive do
 			{:get, var, pid} ->
+				{procesos_espera, estado, myTime}=
 				case var do
 					:procesos ->
 						send(
 							pid,
 							{:ack, procesos_espera}
 						)
+						{procesos_espera, estado, myTime}
 					:estado ->
 						send(
 							pid,
 							{:ack, estado}
 						) 
+						{procesos_espera, estado, myTime}
 					:tiempo ->
 						send(
 							pid,
 							{:ack, myTime}
 						)
+						{procesos_espera, estado, myTime}
 				end
 				server_variables(procesos_espera, estado, myTime)
 			{:set, var, nuevo_valor} ->
+			{procesos_espera, estado, myTime}=
 				case var do
 					:procesos ->
 						procesos_espera = nuevo_valor
+						{procesos_espera, estado, myTime}
 					:estado ->
 						estado = nuevo_valor
+						{procesos_espera, estado, myTime}
 					:tiempo ->
 						myTime = nuevo_valor
+						{procesos_espera, estado, myTime}
 				end
 				server_variables(procesos_espera, estado, myTime)
 
