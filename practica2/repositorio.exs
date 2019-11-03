@@ -27,6 +27,7 @@ end
 defmodule LectEscrit do
 	#Type indica si lector o escritor
 	def init(op_type, procesos) do
+		Process.sleep(1000)
 		procesos = procesar_lista(procesos, Node.self)
 		conectarTodos(procesos)
 		procesos_espera = [] #La uso para el perm_delayed
