@@ -17,4 +17,4 @@ done
 
 #echo 'Process.register(self(),'$3'); LectEscrit.init('$4', '$5')'
 
-echo 'Node.connect(:"p2@127.0.0.1"); Process.register(self(),'$3'); LectEscrit.init('$4', '$5')' | iex --name $1'@'$2 --cookie $6 "repositorio.exs"
+echo 'Process.register(self(),'$3'); LectEscrit.init('$4', '$5')' | iex --name $1'@'$2 --cookie $6 "repositorio.exs"

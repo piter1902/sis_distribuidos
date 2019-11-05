@@ -47,23 +47,26 @@ end
 defmodule LectEscrit do
   # Type indica si lector o escritor
   def init(op_type, procesos) do
-    Process.sleep(1000)
-
-    pid_thread = spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor])
-    pid_servidor = spawn(LectEscrit, :server_variables, [procesos_espera, estado, myTime])
-
-    procesos = procesar_lista(procesos, Node.self())
-    conectarTodos(procesos, pid_thread)
+    Process.sleep(2000)
     
-    pid_procesos = reconocer_procesos(procesos)
     # La uso para el perm_delayed
     procesos_espera = []
     # Cogemos marca temporal de la peticion
     myTime = Time.utc_now()
     estado = :out
+    pid_servidor = spawn(LectEscrit, :server_variables, [procesos_espera, estado, myTime])
     # Thread encargado de escuchar las REQUEST de los demás procesos
+    pid_thread = spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor])
+
+    procesos = procesar_lista(procesos, Node.self())
+    conectarTodos(procesos, pid_thread)
+    
+    pid_procesos = reconocer_procesos(procesos)
+    IO.inspect(pid_procesos)
+    
     begin_op(op_type, pid_procesos, pid_servidor)
     IO.puts("Estoy en SC #{Node.self()}")
+    IO.inspect(Time.utc_now())
 
     send(
       pid_servidor,
@@ -76,7 +79,7 @@ defmodule LectEscrit do
       end
 
     IO.puts(myTime)
-    Process.sleep(1000)
+    Process.sleep(3000)
     # No se pasa estado como parámetro ya que siempre se pone a "out" al llegar a end_op
     end_op(pid_thread, pid_servidor)
   end
@@ -117,19 +120,36 @@ defmodule LectEscrit do
   end
 
   def conectarTodos(procesos, pid_thread) when procesos != [] do
-    [{_, node} | resto] = procesos
+    [{at, node} | resto] = procesos
     procesos = resto
     Node.connect(node)
     send(
-      node,
+      {at, node},
       {:pid_thread, pid_thread}
     )
     IO.puts("Hola #{node}")
-    conectarTodos(procesos)
+    conectarTodos(procesos, pid_thread)
   end
 
   def begin_op(op_type, procesos, pid_servidor) do
     IO.puts("Inicio begin_op")
+
+    send(
+      pid_servidor,
+      {:get, :estado, self()}
+    )
+
+    estado =
+      receive do
+        {:ack, estado} -> estado
+      end
+
+    estado = :trying
+
+    send(
+      pid_servidor,
+      {:set, :estado, estado}
+    )
 
     send(
       pid_servidor,
@@ -181,7 +201,7 @@ defmodule LectEscrit do
     )
 
     receive do
-      {:ack, procesos_espera} -> send_permission(procesos_espera)
+      {:ack, procesos_espera} -> if procesos_espera != [] do send_permission(procesos_espera) end
     end
 
     # Hacemos que thread "receive_petition" acabe
@@ -224,8 +244,9 @@ defmodule LectEscrit do
       {:request, myTime, self(), op_type}
     )
 
-    {_, proc} = process
-    IO.puts("Peticion enviada a #{proc}")
+    proc = process
+    IO.puts("Peticion enviada a ")
+    IO.puts(inspect(proc))
 
     if lista_proc != [] do
       send_petition(lista_proc, op_type, pid_servidor)
