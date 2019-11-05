@@ -200,7 +200,7 @@ defmodule LectEscrit do
     )
     
     receive do
-      {:ack, procesos_espera} -> if procesos_espera != [] do send_permission(procesos_espera) end 
+      {:ack, procesos_espera} -> if procesos_espera != [] do send_permission(procesos_espera, pid_thread) end 
                                 IO.puts("Lista de procesos en espera: ")
                                 IO.inspect(procesos_espera)
     end
@@ -249,14 +249,14 @@ defmodule LectEscrit do
     end
   end
 
-  def send_permission(lista_proc) do
+  def send_permission(lista_proc, pid_thread) do
     # Cogemos el primer proceso de la lista
     [process | cola ] = lista_proc 
     # Eliminamos ese proceso de la lista
     lista_proc = cola
     send(
       process,
-      {:ok, self()}
+      {:ok, pid_thread}
     )
 
    
@@ -324,6 +324,7 @@ defmodule LectEscrit do
         # En caso contrario, mandamos PERMISSION
         if prio do
           procesos_espera = procesos_espera ++ [pid]
+          
           # Actualizamos valor a servidor de variables
           send(
             pid_servidor,
