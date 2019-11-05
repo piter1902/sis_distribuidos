@@ -55,15 +55,18 @@ defmodule LectEscrit do
     myTime = Time.utc_now()
     estado = :out
     pid_servidor = spawn(LectEscrit, :server_variables, [procesos_espera, estado, myTime])
+    # Thread encargado de mutex
+    pid_mutex = spawn(Mutex, :init, [])
     # Thread encargado de escuchar las REQUEST de los demás procesos
-    pid_thread = spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor])
+    pid_thread = spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor, pid_mutex])
+
     procesos = procesar_lista(procesos, Node.self())
     conectarTodos(procesos, pid_thread)
     
     pid_procesos = reconocer_procesos(procesos)
     # IO.inspect(pid_procesos)
     
-    begin_op(op_type, pid_procesos, pid_servidor,pid_thread)
+    begin_op(op_type, pid_procesos, pid_servidor,pid_thread, pid_mutex)
     IO.puts("Estoy en SC #{Node.self()}")
     IO.inspect(Time.utc_now())
 
@@ -130,9 +133,11 @@ defmodule LectEscrit do
     conectarTodos(procesos, pid_thread)
   end
 
-  def begin_op(op_type, procesos, pid_servidor,pid_thread) do
+  def begin_op(op_type, procesos, pid_servidor,pid_thread, pid_mutex) do
     # IO.puts("Inicio begin_op")
-
+    # Para garantizar la exclusión mútua, se realiza wait al mútex
+    wait(pid_mutex)
+   
     send(
       pid_servidor,
       {:get, :estado, self()}
@@ -169,7 +174,8 @@ defmodule LectEscrit do
       pid_servidor,
       {:set, :tiempo, myTime}
     )
-
+    # Fin de exclusión mútua
+    signal(pid_mutex)
     # Hacemos REQUEST
     #send_petition(procesos, op_type, pid_servidor, pid_thread)
     Enum.map(procesos, fn x -> send_petition(x, op_type, pid_servidor, pid_thread) end )
@@ -261,7 +267,7 @@ defmodule LectEscrit do
   # En esta función puedo recibir dos tipos de mensaje:
   # *Peticion de mi proceso padre de que necesita la lista de procesos_espera con lo que se la enviare
   # *Mensajes de REQUEST del resto de procesos.
-  def receive_petition(procesos_espera, myOp, pid_servidor) do
+  def receive_petition(procesos_espera, myOp, pid_servidor, pid_mutex) do
     exclude = %{read: %{read: false, write: true}, write: %{read: true, write: true}}
 
     receive do
@@ -283,7 +289,8 @@ defmodule LectEscrit do
           pid_servidor,
           {:set, :tiempo, myTime}
         )
-
+        
+        wait(pid_mutex)
         # Pedimos valor del estado a servidor de variables
         send(
           pid_servidor,
@@ -301,7 +308,8 @@ defmodule LectEscrit do
         IO.puts("Mi op: #{myOp}, su op: #{other_op}")
         # Falta comprobar el estado(out,in)
         prio = estado != :out && Time.compare(other_time, myTime) == :gt && exclude[myOp][other_op]
-        # En caso contrario, mandamos PERMISSION
+        
+        signal(pid_mutex)
         if prio do
           procesos_espera = procesos_espera ++ [pid]
           
@@ -379,5 +387,58 @@ defmodule LectEscrit do
       {:fin_operacion} ->
         nil
     end
+  end
+
+  def signal(pid_mutex) do
+    send(
+      pid_mutex,
+      {:signal}
+    )
+  end
+
+  def wait(pid_mutex) do
+    send(
+      pid_mutex,
+      {:wait, self()}
+    )
+    receive do
+      {:wait_ack} -> nil
+    end
+  end
+
+end
+
+defmodule Mutex do
+  def init() do
+    mutex(1,[])
+  end
+
+  defp mutex(valor, lista_espera) do
+    (valor, lista_espera) =
+    receive do
+      {:signal} ->  if lista_espera != [] do
+                      [proceso | cola] = lista_espera
+                      lista_espera = cola
+                      send(
+                        proceso,
+                        {:wait_ack}
+                      )
+                      (valor, lista_espera)
+                    else
+                      (valor + 1, lista_espera)
+                    end
+
+      {:wait, proceso} -> if valor != 0 do
+                            send(
+                              proceso,
+                              {:wait_ack}
+                            )
+                            (valor - 1, lista_espera)
+                          else
+                            (valor, lista_espera ++ [proceso])
+                          end
+
+    end
+    mutex(valor, lista_espera)
   end
 end
