@@ -48,17 +48,21 @@ defmodule LectEscrit do
   # Type indica si lector o escritor
   def init(op_type, procesos) do
     Process.sleep(1000)
+
+    pid_thread = spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor])
+    pid_servidor = spawn(LectEscrit, :server_variables, [procesos_espera, estado, myTime])
+
     procesos = procesar_lista(procesos, Node.self())
-    conectarTodos(procesos)
+    conectarTodos(procesos, pid_thread)
+    
+    pid_procesos = reconocer_procesos(procesos)
     # La uso para el perm_delayed
     procesos_espera = []
     # Cogemos marca temporal de la peticion
     myTime = Time.utc_now()
     estado = :out
-    pid_servidor = spawn(LectEscrit, :server_variables, [procesos_espera, estado, myTime])
     # Thread encargado de escuchar las REQUEST de los demás procesos
-    pid_thread = spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor])
-    begin_op(op_type, procesos, pid_servidor)
+    begin_op(op_type, pid_procesos, pid_servidor)
     IO.puts("Estoy en SC #{Node.self()}")
 
     send(
@@ -77,6 +81,20 @@ defmodule LectEscrit do
     end_op(pid_thread, pid_servidor)
   end
 
+  def reconocer_procesos(lista) do
+    if lista != [] do
+      pid_th = 
+      receive do
+        {:pid_thread, pid_thread} -> pid_thread
+      end
+      [_|resto] = lista
+      lista = resto
+      [pid_th] ++ reconocer_procesos(lista)
+    else
+      []
+    end
+  end
+
   def procesar_lista(procesos, comparar) do
     if procesos != [] do
       [{at, nodo} | resto] = procesos
@@ -93,15 +111,19 @@ defmodule LectEscrit do
     end
   end
 
-  def conectarTodos(procesos) when procesos == [] do
+  def conectarTodos(procesos, _) when procesos == [] do
     IO.puts("Conectado a todos")
     IO.puts(inspect(Node.list()))
   end
 
-  def conectarTodos(procesos) when procesos != [] do
+  def conectarTodos(procesos, pid_thread) when procesos != [] do
     [{_, node} | resto] = procesos
     procesos = resto
     Node.connect(node)
+    send(
+      node,
+      {:pid_thread, pid_thread}
+    )
     IO.puts("Hola #{node}")
     conectarTodos(procesos)
   end
