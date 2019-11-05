@@ -53,7 +53,7 @@ defmodule LectEscrit do
     procesos_espera = []
     # Cogemos marca temporal de la peticion
     myTime = Time.utc_now()
-    estado = :trying
+    estado = :out
     pid_servidor = spawn(LectEscrit, :server_variables, [procesos_espera, estado, myTime])
     # Thread encargado de escuchar las REQUEST de los demás procesos
     pid_thread = spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor])
@@ -115,8 +115,8 @@ defmodule LectEscrit do
   end
 
   def conectarTodos(procesos, _) when procesos == [] do
-    IO.puts("Conectado a todos")
-    IO.puts(inspect(Node.list()))
+    # IO.puts("Conectado a todos")
+    # IO.puts(inspect(Node.list()))
   end
 
   def conectarTodos(procesos, pid_thread) when procesos != [] do
@@ -127,12 +127,12 @@ defmodule LectEscrit do
       {at, node},
       {:pid_thread, pid_thread}
     )
-    IO.puts("Hola #{node}")
+    # IO.puts("Hola #{node}")
     conectarTodos(procesos, pid_thread)
   end
 
   def begin_op(op_type, procesos, pid_servidor) do
-    IO.puts("Inicio begin_op")
+    # IO.puts("Inicio begin_op")
 
     send(
       pid_servidor,
@@ -176,7 +176,6 @@ defmodule LectEscrit do
     # Esperamos confirmación de todos procesos
     receive_permission(procesos)
     estado = :in
-    IO.puts("Estado: #{estado}")
     # Actualizamos valor a servidor de variables
     send(
       pid_servidor,
@@ -221,7 +220,6 @@ defmodule LectEscrit do
 
   def send_petition(lista_proc, op_type, pid_servidor) do
     # Consultamos valor de myTime a servidor de variables
-    IO.puts("send_petition")
 
     send(
       pid_servidor,
@@ -233,8 +231,6 @@ defmodule LectEscrit do
         {:ack, myTime} -> myTime
       end
 
-    IO.puts("Tiempo en send_petition:")
-    IO.puts(inspect(myTime))
     # Enviamos request a cada uno de los procesos 
     # Cogemos el primer proceso de la lista
     [process | resto] = lista_proc
@@ -247,8 +243,6 @@ defmodule LectEscrit do
     )
 
     proc = process
-    IO.puts("Peticion enviada a ")
-    IO.puts(inspect(proc))
 
     if lista_proc != [] do
       send_petition(lista_proc, op_type, pid_servidor)
@@ -288,7 +282,7 @@ defmodule LectEscrit do
   # *Peticion de mi proceso padre de que necesita la lista de procesos_espera con lo que se la enviare
   # *Mensajes de REQUEST del resto de procesos.
   def receive_petition(procesos_espera, myOp, pid_servidor) do
-    exclude = %{read: %{read: true, write: false}, write: %{read: false, write: false}}
+    exclude = %{read: %{read: false, write: true}, write: %{read: true, write: true}}
 
     receive do
       {:request, other_time, pid, other_op} ->
@@ -320,9 +314,13 @@ defmodule LectEscrit do
           receive do
             {:ack, estado} -> estado
           end
-
+        
+        IO.puts("Estado: #{estado}")
+        IO.puts("Diferencia de tiempo: #{Time.compare(other_time, myTime)}")
+        IO.puts("Exclusion: #{exclude[myOp][other_op]}")
+        IO.puts("Mi op: #{myOp}, su op: #{other_op}")
         # Falta comprobar el estado(out,in)
-        prio = estado != :out && other_time > myTime && exclude[myOp][other_op]
+        prio = estado != :out && Time.compare(other_time, myTime) == :gt && exclude[myOp][other_op]
         # En caso contrario, mandamos PERMISSION
         if prio do
           procesos_espera = procesos_espera ++ pid
