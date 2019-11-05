@@ -171,10 +171,12 @@ defmodule LectEscrit do
     )
 
     # Hacemos REQUEST
-    send_petition(procesos, op_type, pid_servidor, pid_thread)
+    #send_petition(procesos, op_type, pid_servidor, pid_thread)
+    Enum.map(procesos, fn x -> send_petition(x, op_type, pid_servidor, pid_thread) end )
     # Esperamos confirmación de todos procesos
     IO.inspect(procesos)
-    receive_permission(procesos)
+    #receive_permission(procesos)
+    Enum.map(procesos, fn x -> receive_permission(x) end)
     estado = :in
     # Actualizamos valor a servidor de variables
     send(
@@ -200,9 +202,9 @@ defmodule LectEscrit do
     )
     
     receive do
-      {:ack, procesos_espera} -> if procesos_espera != [] do send_permission(procesos_espera, pid_thread) end 
-                                IO.puts("Lista de procesos en espera: ")
-                                IO.inspect(procesos_espera)
+      {:ack, procesos_espera} -> Enum.map(procesos_espera, fn x -> send_permission(x, pid_thread) end)
+                                 IO.puts("Lista de procesos en espera: ")
+                                 IO.inspect(procesos_espera)
     end
 
     # Hacemos que thread "receive_petition" acabe
@@ -218,7 +220,7 @@ defmodule LectEscrit do
     )
   end
 
-  def send_petition(lista_proc, op_type, pid_servidor, pid_thread) do
+  def send_petition(process, op_type, pid_servidor, pid_thread) do
     # Consultamos valor de myTime a servidor de variables
 
     send(
@@ -231,48 +233,28 @@ defmodule LectEscrit do
         {:ack, myTime} -> myTime
       end
 
-    # Enviamos request a cada uno de los procesos 
-    # Cogemos el primer proceso de la lista
-    [process | resto] = lista_proc
-    # Eliminamos ese proceso de la lista
-    lista_proc = resto
-
+    # Enviamos request a cada uno de los procesos
     send(
       process,
       {:request, myTime, self(), op_type}
     )
 
-    if lista_proc != [] do
-      send_petition(lista_proc, op_type, pid_servidor, pid_thread)
-    end
   end
 
-  def send_permission(lista_proc, pid_thread) do
-    # Cogemos el primer proceso de la lista
-    [process | cola ] = lista_proc 
-    # Eliminamos ese proceso de la lista
-    lista_proc = cola
+  def send_permission(process, pid_thread) do
+    # Enviamos el permiso para entrar en SC
     send(
       process,
       {:ok, pid_thread}
     )
-    # Comprobamos si queda algun proceso del que recibir confirmacion
-    if lista_proc != [] do
-      send_permission(lista_proc, pid_thread)
-    end
   end
 
-  def receive_permission(lista_proc) do
+  def receive_permission(x) do
     receive do
       # Recibimos confirmacion de todos procesos y eliminamos de la lista
       {:ok, pid} ->
-        IO.puts("Nos ha llegado permiso deç")
+        IO.puts("Nos ha llegado permiso de")
         IO.inspect(pid)
-        lista_proc = lista_proc -- [pid]
-        # Comprobamos si queda algun proceso del que recibir confirmacion
-        if lista_proc != [] do
-          receive_permission(lista_proc)
-        end
     end
   end
 
