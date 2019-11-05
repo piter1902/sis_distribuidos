@@ -183,12 +183,14 @@ defmodule LectEscrit do
     IO.inspect(procesos)
     #receive_permission(procesos)
     Enum.map(procesos, fn x -> receive_permission(x) end)
+    wait(pid_mutex)
     estado = :in
     # Actualizamos valor a servidor de variables
     send(
       pid_servidor,
       {:set, :estado, estado}
     )
+    signal(pid_mutex)
 
     # Se supone que estamos dentro
   end
@@ -273,6 +275,7 @@ defmodule LectEscrit do
     receive do
       {:request, other_time, pid, other_op} ->
         IO.puts("Me ha llegado un REQUEST")
+        wait(pid_mutex)
         send(
           pid_servidor,
           {:get, :tiempo, self()}
@@ -283,6 +286,7 @@ defmodule LectEscrit do
             {:ack, myTime} -> myTime
           end
 
+        mt = myTime
         myTime = Enum.max([myTime, other_time])
         # Actualizamos valor a servidor de variables
         send(
@@ -290,7 +294,6 @@ defmodule LectEscrit do
           {:set, :tiempo, myTime}
         )
         
-        wait(pid_mutex)
         # Pedimos valor del estado a servidor de variables
         send(
           pid_servidor,
@@ -303,16 +306,16 @@ defmodule LectEscrit do
           end
         
         IO.puts("Estado: #{estado}")
+        IO.puts("myTime #{inspect(mt)} | other_time #{inspect(other_time)}")
         IO.puts("Diferencia de tiempo: #{Time.compare(other_time, myTime)}")
-        IO.puts("Exclusion: #{exclude[myOp][other_op]}")
         IO.puts("Mi op: #{myOp}, su op: #{other_op}")
+        IO.puts("Exclusion: #{exclude[myOp][other_op]}")
         # Falta comprobar el estado(out,in)
-        prio = estado != :out && Time.compare(other_time, myTime) == :gt && exclude[myOp][other_op]
-        
+        prio = (estado != :out) && (Time.compare(other_time, mt) == :gt) && exclude[myOp][other_op]
+        IO.puts("La prioridad es: #{prio}")
         signal(pid_mutex)
         if prio do
           procesos_espera = procesos_espera ++ [pid]
-          
           # Actualizamos valor a servidor de variables
           send(
             pid_servidor,
@@ -326,7 +329,7 @@ defmodule LectEscrit do
         end
 
         # Llamada recursiva
-        receive_petition(procesos_espera, myOp, pid_servidor)
+        receive_petition(procesos_espera, myOp, pid_servidor, pid_mutex)
 
       {:fin_operacion} ->
         nil
