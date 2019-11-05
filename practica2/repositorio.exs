@@ -53,7 +53,7 @@ defmodule LectEscrit do
     procesos_espera = []
     # Cogemos marca temporal de la peticion
     myTime = Time.utc_now()
-    estado = :out
+    estado = :trying
     pid_servidor = spawn(LectEscrit, :server_variables, [procesos_espera, estado, myTime])
     # Thread encargado de escuchar las REQUEST de los demás procesos
     pid_thread = spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor])
@@ -199,9 +199,11 @@ defmodule LectEscrit do
       pid_servidor,
       {:get, :procesos, self()}
     )
-
+    
     receive do
-      {:ack, procesos_espera} -> if procesos_espera != [] do send_permission(procesos_espera) end
+      {:ack, procesos_espera} -> if procesos_espera != [] do send_permission(procesos_espera) end 
+                                IO.puts("Lista de procesos en espera: ")
+                                IO.inspect(procesos_espera)
     end
 
     # Hacemos que thread "receive_petition" acabe
@@ -290,6 +292,7 @@ defmodule LectEscrit do
 
     receive do
       {:request, other_time, pid, other_op} ->
+        IO.puts("Me ha llegado un REQUEST")
         send(
           pid_servidor,
           {:get, :tiempo, self()}
