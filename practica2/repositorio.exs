@@ -414,7 +414,7 @@ defmodule Mutex do
   end
 
   defp mutex(valor, lista_espera) do
-    (valor, lista_espera) =
+    {valor, lista_espera} =
     receive do
       {:signal} ->  if lista_espera != [] do
                       [proceso | cola] = lista_espera
@@ -423,9 +423,9 @@ defmodule Mutex do
                         proceso,
                         {:wait_ack}
                       )
-                      (valor, lista_espera)
+                      {valor, lista_espera}
                     else
-                      (valor + 1, lista_espera)
+                      {valor + 1, lista_espera}
                     end
 
       {:wait, proceso} -> if valor != 0 do
@@ -433,9 +433,9 @@ defmodule Mutex do
                               proceso,
                               {:wait_ack}
                             )
-                            (valor - 1, lista_espera)
+                            {valor - 1, lista_espera}
                           else
-                            (valor, lista_espera ++ [proceso])
+                            {valor, lista_espera ++ [proceso]}
                           end
 
     end
