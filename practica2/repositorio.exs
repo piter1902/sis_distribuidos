@@ -62,7 +62,7 @@ defmodule LectEscrit do
     conectarTodos(procesos, pid_thread)
     
     pid_procesos = reconocer_procesos(procesos)
-    IO.inspect(pid_procesos)
+    # IO.inspect(pid_procesos)
     
     begin_op(op_type, pid_procesos, pid_servidor)
     IO.puts("Estoy en SC #{Node.self()}")
@@ -251,15 +251,15 @@ defmodule LectEscrit do
 
   def send_permission(lista_proc) do
     # Cogemos el primer proceso de la lista
-    process = List.first(lista_proc)
-
+    [process | cola ] = lista_proc 
+    # Eliminamos ese proceso de la lista
+    lista_proc = cola
     send(
       process,
       {:ok, self()}
     )
 
-    # Eliminamos ese proceso de la lista
-    lista_proc = List.delete_at(lista_proc, 1)
+   
     # Comprobamos si queda algun proceso del que recibir confirmacion
     if lista_proc != [] do
       receive_permission(lista_proc)
@@ -270,7 +270,7 @@ defmodule LectEscrit do
     receive do
       # Recibimos confirmacion de todos procesos y eliminamos de la lista
       {:ok, pid} ->
-        lista_proc = List.delete(lista_proc, pid)
+        lista_proc = lista_proc -- [pid]
         # Comprobamos si queda algun proceso del que recibir confirmacion
         if lista_proc != [] do
           receive_permission(lista_proc)
@@ -323,7 +323,7 @@ defmodule LectEscrit do
         prio = estado != :out && Time.compare(other_time, myTime) == :gt && exclude[myOp][other_op]
         # En caso contrario, mandamos PERMISSION
         if prio do
-          procesos_espera = procesos_espera ++ pid
+          procesos_espera = procesos_espera ++ [pid]
           # Actualizamos valor a servidor de variables
           send(
             pid_servidor,
