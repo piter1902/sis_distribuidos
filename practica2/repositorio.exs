@@ -57,14 +57,13 @@ defmodule LectEscrit do
     pid_servidor = spawn(LectEscrit, :server_variables, [procesos_espera, estado, myTime])
     # Thread encargado de escuchar las REQUEST de los demás procesos
     pid_thread = spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor])
-
     procesos = procesar_lista(procesos, Node.self())
     conectarTodos(procesos, pid_thread)
     
     pid_procesos = reconocer_procesos(procesos)
     # IO.inspect(pid_procesos)
     
-    begin_op(op_type, pid_procesos, pid_servidor)
+    begin_op(op_type, pid_procesos, pid_servidor,pid_thread)
     IO.puts("Estoy en SC #{Node.self()}")
     IO.inspect(Time.utc_now())
 
@@ -131,7 +130,7 @@ defmodule LectEscrit do
     conectarTodos(procesos, pid_thread)
   end
 
-  def begin_op(op_type, procesos, pid_servidor) do
+  def begin_op(op_type, procesos, pid_servidor,pid_thread) do
     # IO.puts("Inicio begin_op")
 
     send(
@@ -240,10 +239,8 @@ defmodule LectEscrit do
 
     send(
       process,
-      {:request, myTime, pid_thread, op_type}
+      {:request, myTime, self(), op_type}
     )
-
-    proc = process
 
     if lista_proc != [] do
       send_petition(lista_proc, op_type, pid_servidor, pid_thread)
@@ -259,8 +256,6 @@ defmodule LectEscrit do
       process,
       {:ok, pid_thread}
     )
-
-   
     # Comprobamos si queda algun proceso del que recibir confirmacion
     if lista_proc != [] do
       send_permission(lista_proc, pid_thread)
@@ -271,6 +266,8 @@ defmodule LectEscrit do
     receive do
       # Recibimos confirmacion de todos procesos y eliminamos de la lista
       {:ok, pid} ->
+        IO.puts("Nos ha llegado permiso deç")
+        IO.inspect(pid)
         lista_proc = lista_proc -- [pid]
         # Comprobamos si queda algun proceso del que recibir confirmacion
         if lista_proc != [] do
