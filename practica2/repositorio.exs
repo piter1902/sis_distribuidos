@@ -172,8 +172,9 @@ defmodule LectEscrit do
     )
 
     # Hacemos REQUEST
-    send_petition(procesos, op_type, pid_servidor)
+    send_petition(procesos, op_type, pid_servidor, pid_thread)
     # Esperamos confirmación de todos procesos
+    IO.inspect(procesos)
     receive_permission(procesos)
     estado = :in
     # Actualizamos valor a servidor de variables
@@ -218,7 +219,7 @@ defmodule LectEscrit do
     )
   end
 
-  def send_petition(lista_proc, op_type, pid_servidor) do
+  def send_petition(lista_proc, op_type, pid_servidor, pid_thread) do
     # Consultamos valor de myTime a servidor de variables
 
     send(
@@ -239,13 +240,13 @@ defmodule LectEscrit do
 
     send(
       process,
-      {:request, myTime, self(), op_type}
+      {:request, myTime, pid_thread, op_type}
     )
 
     proc = process
 
     if lista_proc != [] do
-      send_petition(lista_proc, op_type, pid_servidor)
+      send_petition(lista_proc, op_type, pid_servidor, pid_thread)
     end
   end
 
@@ -262,7 +263,7 @@ defmodule LectEscrit do
    
     # Comprobamos si queda algun proceso del que recibir confirmacion
     if lista_proc != [] do
-      receive_permission(lista_proc)
+      send_permission(lista_proc, pid_thread)
     end
   end
 
