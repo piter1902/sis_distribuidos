@@ -38,6 +38,7 @@ i=1
 while [ $i -le $1 ]
 do
     gnome-terminal -x bash -c "bash $(pwd)/init.sh "l$i" "$3" ":l$i" ":read" '$lista' "$5"; exec bash"
+    sleep 0.001
     i=$(( i + 1))
 done
 
@@ -46,5 +47,6 @@ i=1
 while [ $i -le $2 ]
 do
     gnome-terminal -x bash -c "bash $(pwd)/init.sh "w$i" "$3" ":w$i" ":write" '$lista' "$5"; exec bash"
+    sleep 0.001
     i=$(( i + 1))
 done

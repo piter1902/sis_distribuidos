@@ -47,7 +47,7 @@ end
 defmodule LectEscrit do
   # Type indica si lector o escritor
   def init(op_type, procesos) do
-    Process.sleep(2000)
+    Process.sleep(3000)
     
     # La uso para el perm_delayed
     procesos_espera = []
