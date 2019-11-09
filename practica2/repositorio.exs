@@ -47,36 +47,39 @@ end
 defmodule LectEscrit do
   # Type indica si lector o escritor
   def init(op_type, procesos) do
-    Process.sleep(3000)
-
     # La uso para el perm_delayed
     procesos_espera = []
     # Cogemos marca temporal de la peticion
     myTime = Time.utc_now()
     estado = :out
+    # Thread encargado de la gestion de las variables compartidas (servidor de variables)
     pid_servidor = spawn(LectEscrit, :server_variables, [procesos_espera, estado, myTime])
+
     # Thread encargado de mutex
     pid_mutex = spawn(Mutex, :init, [])
+
     # Thread encargado de escuchar las REQUEST de los demás procesos
     pid_thread =
       spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor, pid_mutex])
 
+    # Conectamos a todos los procesos de la lista <procesos>
     procesos = procesar_lista(procesos, Node.self())
     conectarTodos(procesos, pid_thread)
 
+    # <pid_procesos> contiene los pid de los procesos REQUEST de los otros nodos
     pid_procesos = reconocer_procesos(procesos)
     # IO.inspect(pid_procesos)
 
-    begin_op(op_type, pid_procesos, pid_servidor, pid_thread, pid_mutex)
-    IO.puts("Estoy en SC #{Node.self()}")
-    IO.inspect(Time.utc_now())
+    # Desacoplamos el codigo de la seccion critica de lo que es el init del sistema
+    # begin_op(op_type, pid_procesos, pid_servidor, pid_thread, pid_mutex)
+    # IO.puts("Estoy en SC #{Node.self()}")
+    # IO.inspect(Time.utc_now())
 
-    myTime = get(pid_servidor, :tiempo)
+    # myTime = get(pid_servidor, :tiempo)
 
-    IO.puts(myTime)
-    Process.sleep(3000)
-    # No se pasa estado como parámetro ya que siempre se pone a "out" al llegar a end_op
-    end_op(pid_thread, pid_servidor)
+    # IO.puts(myTime)
+    # Process.sleep(3000)
+    # end_op(pid_thread, pid_servidor)
   end
 
   def reconocer_procesos(lista) do
