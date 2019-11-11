@@ -1,7 +1,8 @@
-# AUTOR: Rafael Tolosana Calasanz
+# AUTOR: Pedro Tamargo -  Juan José Tambo 
+# NIAs: 
 # FICHERO: repositorio.exs
-# FECHA: 17 de octubre de 2019
-# TIEMPO: 1 hora
+# FECHA: 11 de noviembre de 2019
+# TIEMPO: 3 horas
 # DESCRIPCI'ON:  	Implementa un repositorio para gestionar el enunciado de un trabajo de asignatura.
 # 				El enunciado tiene tres partes: resumen, parte principal y descripci'on de la entrega.
 # 				El repositorio consta de un servidor que proporciona acceso individual a cada parte del enunciado,
@@ -70,6 +71,9 @@ defmodule LectEscrit do
     pid_procesos = reconocer_procesos(procesos)
     # IO.inspect(pid_procesos)
 
+    #Parámetros que devuelve la función init
+    {pid_procesos, pid_servidor, pid_thread, pid_mutex}
+
     # Desacoplamos el codigo de la seccion critica de lo que es el init del sistema
     # begin_op(op_type, pid_procesos, pid_servidor, pid_thread, pid_mutex)
     # IO.puts("Estoy en SC #{Node.self()}")
@@ -132,8 +136,8 @@ defmodule LectEscrit do
     conectarTodos(procesos, pid_thread)
   end
 
-  def begin_op(op_type, procesos, pid_servidor, pid_thread, pid_mutex) do
-    # IO.puts("Inicio begin_op")
+  def begin_op(op_type,procesos, pid_servidor, pid_thread, pid_mutex) do
+    
     # Para garantizar la exclusión mútua, se realiza wait al mútex
     wait(pid_mutex)
 
@@ -180,17 +184,6 @@ defmodule LectEscrit do
     # Enviamos permiso a todos los procesos encolados
     Enum.map(procesos_espera, fn x -> send_permission(x, pid_thread) end)
 
-    # Hacemos que thread "receive_petition" acabe
-    send(
-      pid_thread,
-      {:fin_operacion}
-    )
-
-    # Hacemos que servidor de variables acabe
-    send(
-      pid_servidor,
-      {:fin_operacion}
-    )
   end
 
   def send_petition(process, op_type, pid_servidor, pid_thread) do
@@ -302,6 +295,27 @@ defmodule LectEscrit do
     )
   end
 
+  # Función encargada de enviar a proceso de variables, proceso de recepción de peticiones
+  # y proceso mutex la incicación de terminar ejecución.
+  def end_process(pid_thread, pid_servidor, pid_mutex) do
+    # Hacemos que thread "receive_petition" acabe
+    send(
+      pid_thread,
+      {:fin_operacion}
+    )
+
+    # Hacemos que servidor de variables acabe
+    send(
+      pid_servidor,
+      {:fin_operacion}
+    )
+
+    #Hacemos que proceso muex termine
+    send(
+      pid_mutex,
+      {:fin_operacion}
+    )
+  end
   def server_variables(procesos_espera, estado, myTime) do
     receive do
       {:get, var, pid} ->
@@ -398,7 +412,7 @@ defmodule Mutex do
           else
             {valor + 1, lista_espera}
           end
-
+          mutex(valor, lista_espera)
         {:wait, proceso} ->
           if valor != 0 do
             send(
@@ -410,8 +424,8 @@ defmodule Mutex do
           else
             {valor, lista_espera ++ [proceso]}
           end
+          mutex(valor, lista_espera)
+        {:fin_operacion} -> nil
       end
-
-    mutex(valor, lista_espera)
   end
 end
