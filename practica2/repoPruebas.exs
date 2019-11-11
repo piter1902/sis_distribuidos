@@ -25,6 +25,7 @@ defmodule Pruebas do
     
     #Comprueba si es un proceso de lectura o escritura
     if  op_type == :write do
+      IO.puts("Enviando a repo y soy writer")
       #Si es un proceso de escritura, envía a repositorio el texto a modificar y el lugar (entrega, resumen o principal)
       send(
           pid_repositorio,
@@ -35,6 +36,7 @@ defmodule Pruebas do
         {:reply, :ok} -> nil
       end
     else
+      IO.puts("Enviando a repo y soy lector")
       #Si es un proceso de escritura, envía a repositorio la solicitud de leer sobre una parte en concreto (entrega, resumen o principal)
       send(
         pid_repositorio,
