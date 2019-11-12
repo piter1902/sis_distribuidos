@@ -17,12 +17,14 @@ defmodule Pruebas do
     {procesos_req, pid_servidor, pid_thread, pid_mutex} = init(op_type, procesos)
 
     #Zona pre-protocol
+    IO.puts("Entro a begin_op")
     begin_op(op_type, procesos_req, pid_servidor, pid_thread, pid_mutex)
-    
+    IO.puts("Estoy en SC")
+
     #En este punto, el proceso se encuentra en sección crítica
     #Muestra por pantalla el momento exacto en el que entra en SC
-    IO.puts("entramos en SC en ")
-    IO.inspect(Time.utc_now())
+    IO.puts("Tiempo local: #{inspect(Time.utc_now())}")
+    IO.puts("Reloj logico escalar: #{inspect(get(pid_servidor, :tiempo))}")
     
     #Comprueba si es un proceso de lectura o escritura
     if  op_type == :write do
@@ -48,13 +50,13 @@ defmodule Pruebas do
         {:reply, texto} -> IO.puts("Valor de #{where} es #{texto}")
       end
     end
-    Process.sleep(1000)
+    Process.sleep(3000)
     #Zona de Post-protocol
     end_op(pid_thread, pid_servidor)
-    #Acabamos procesos
     IO.puts("FINAL")
+    #Acabamos procesos
+    Process.sleep(3000)
     receive do
-
     end
     #end_process(pid_servidor, pid_thread, pid_mutex)
   end
