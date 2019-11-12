@@ -40,7 +40,7 @@ defmodule Repositorio do
           send(c_pid, {:reply, entrega})
           {resumen, principal, entrega}
       end
-
+    IO.inspect({n_resumen, n_principal, n_entrega})
     repo_server({n_resumen, n_principal, n_entrega})
   end
 end
@@ -48,6 +48,9 @@ end
 defmodule LectEscrit do
   # Type indica si lector o escritor
   def init(op_type, procesos) do
+
+    Process.sleep(1000)
+
     # La uso para el perm_delayed
     procesos_espera = []
     # Cogemos marca temporal de la peticion
@@ -68,8 +71,9 @@ defmodule LectEscrit do
     conectarTodos(procesos, pid_thread)
 
     # <pid_procesos> contiene los pid de los procesos REQUEST de los otros nodos
-    pid_procesos = reconocer_procesos(procesos)
-    # IO.inspect(pid_procesos)
+    #pid_procesos = reconocer_procesos(procesos)
+    pid_procesos = Enum.map(procesos, fn _ -> receive do {:pid_thread, pid_thread} -> pid_thread end end)
+    IO.inspect(pid_procesos)
 
     #Parámetros que devuelve la función init
     {pid_procesos, pid_servidor, pid_thread, pid_mutex}
@@ -88,6 +92,7 @@ defmodule LectEscrit do
 
   def reconocer_procesos(lista) do
     if lista != [] do
+    #IO.puts("entro a reconocer_procesos")
       pid_th =
         receive do
           {:pid_thread, pid_thread} -> pid_thread
@@ -118,8 +123,8 @@ defmodule LectEscrit do
   end
 
   def conectarTodos(procesos, _) when procesos == [] do
-    # IO.puts("Conectado a todos")
-    # IO.puts(inspect(Node.list()))
+     #IO.puts("Conectado a todos")
+     #IO.puts(inspect(Node.list()))
   end
 
   def conectarTodos(procesos, pid_thread) when procesos != [] do
@@ -127,6 +132,7 @@ defmodule LectEscrit do
     procesos = resto
     Node.connect(node)
 
+    #IO.puts("Envio mi thrad a #{inspect(node)}")
     send(
       {at, node},
       {:pid_thread, pid_thread}
@@ -149,7 +155,7 @@ defmodule LectEscrit do
 
     # myTime = myTime + 1
     IO.puts("Tiempo recibido: #{myTime}")
-    myTime = Time.add(myTime, 1)
+    myTime = Time.add(myTime, 60)
     IO.puts("Tiempo cambiado: #{myTime}")
 
     set(pid_servidor, :tiempo, myTime)
@@ -158,7 +164,7 @@ defmodule LectEscrit do
     signal(pid_mutex)
     # Hacemos REQUEST
     # send_petition(procesos, op_type, pid_servidor, pid_thread)
-    Enum.map(procesos, fn x -> send_petition(x, op_type, pid_servidor, pid_thread) end)
+    Enum.map(procesos, fn x -> send_petition(x, op_type, pid_servidor, pid_thread, pid_mutex) end)
     # Esperamos confirmación de todos procesos
     IO.inspect(procesos)
     # receive_permission(procesos)
@@ -181,16 +187,20 @@ defmodule LectEscrit do
     # Pedimos al thread que nos proporcione la lista de delayed
     procesos_espera = get(pid_servidor, :procesos)
 
+    IO.inspect(procesos_espera)
+
     # Enviamos permiso a todos los procesos encolados
     Enum.map(procesos_espera, fn x -> send_permission(x, pid_thread) end)
 
   end
 
-  def send_petition(process, op_type, pid_servidor, pid_thread) do
+  def send_petition(process, op_type, pid_servidor, pid_thread, pid_mutex) do
+    wait(pid_mutex)
     # Consultamos valor de myTime a servidor de variables
     myTime = get(pid_servidor, :tiempo)
-
+    signal(pid_mutex)
     # Enviamos request a cada uno de los procesos
+    IO.puts("Enviando REQUEST a #{inspect(process)}")
     send(
       process,
       {:request, myTime, self(), op_type}
@@ -209,8 +219,7 @@ defmodule LectEscrit do
     receive do
       # Recibimos confirmacion de todos procesos y eliminamos de la lista
       {:ok, pid} ->
-        IO.puts("Nos ha llegado permiso de")
-        IO.inspect(pid)
+        IO.puts("Nos ha llegado permiso de #{inspect(pid)}")
     end
   end
 
@@ -241,25 +250,29 @@ defmodule LectEscrit do
         # Pedimos valor del estado a servidor de variables
         estado = get(pid_servidor, :estado)
 
-        IO.puts("Estado: #{estado}")
-        IO.puts("myTime #{inspect(mt)} | other_time #{inspect(other_time)}")
-        IO.puts("Diferencia de tiempo: #{Time.compare(other_time, myTime)}")
-        IO.puts("Mi op: #{myOp}, su op: #{other_op}")
-        IO.puts("Exclusion: #{exclude[myOp][other_op]}")
+        #IO.puts("Estado: #{estado}")
+        #IO.puts("myTime #{inspect(mt)} | other_time #{inspect(other_time)}")
+        #IO.puts("Diferencia de tiempo: (other_time > myTime) #{Time.compare(other_time, mt)}")
+        #IO.puts("Mi op: #{myOp}, su op: #{other_op}")
+        #IO.puts("Exclusion: #{exclude[myOp][other_op]}")
         # Falta comprobar el estado(out,in)
-        prio = estado != :out && Time.compare(other_time, mt) == :gt && exclude[myOp][other_op]
-        IO.puts("La prioridad es: #{prio}")
+        #prio = estado != :out && Time.compare(other_time, mt) == :gt && exclude[myOp][other_op]
+        prio = estado != :out && Time.diff(other_time, mt, :millisecond) > 0 && exclude[myOp][other_op]
+        IO.puts("Mi prioridad es: #{prio}")
         signal(pid_mutex)
 
+        procesos_espera =
         if prio do
           procesos_espera = procesos_espera ++ [pid]
           # Actualizamos valor a servidor de variables
           set(pid_servidor, :procesos, procesos_espera)
+          procesos_espera
         else
           send(
             pid,
             {:ok, self()}
           )
+          procesos_espera
         end
 
         # Llamada recursiva
