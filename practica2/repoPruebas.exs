@@ -17,7 +17,6 @@ defmodule Pruebas do
     {procesos_req, pid_servidor, pid_thread, pid_mutex} = init(op_type, procesos)
 
     #Zona pre-protocol
-    IO.puts("Entro a begin_op")
     begin_op(op_type, procesos_req, pid_servidor, pid_thread, pid_mutex)
     IO.puts("Estoy en SC")
 
@@ -55,7 +54,6 @@ defmodule Pruebas do
     end_op(pid_thread, pid_servidor)
     IO.puts("FINAL")
     #Acabamos procesos
-    Process.sleep(3000)
     receive do
     end
     #end_process(pid_servidor, pid_thread, pid_mutex)

@@ -69,7 +69,7 @@ i=1
 while [ $i -le $1 ]
 do
     gnome-terminal -x bash -c "bash $(pwd)/initRep.sh "lresu$i" "$7" ":lresu$i" ":read" '$lista' "$9" ":read_resumen" "repo"  "Modifcio_resumen_$i"; exec bash"
-    sleep 0.001
+    
     i=$(( i + 1))
 done
 
@@ -78,7 +78,7 @@ i=1
 while [ $i -le $2 ]
 do
     gnome-terminal -x bash -c "bash $(pwd)/initRep.sh "lprinci$i" "$7" ":lprinci$i" ":read" '$lista' "$9" ":read_principal" "repo"  "Modifcio_resumen_$i"; exec bash"
-    sleep 0.001
+    
     i=$(( i + 1))
 done
 
@@ -87,7 +87,7 @@ i=1
 while [ $i -le $3 ]
 do
     gnome-terminal -x bash -c "bash $(pwd)/initRep.sh "lentre$i" "$7" ":lentre$i" ":read" '$lista' "$9" ":read_entrega"  "repo"  "Modifcio_resumen_$i"; exec bash"
-    sleep 0.001
+    
     i=$(( i + 1))
 done
 
@@ -96,7 +96,7 @@ i=1
 while [ $i -le $4 ]
 do
     gnome-terminal -x bash -c "bash $(pwd)/initRep.sh "wresu$i" "$8" ":wresu$i" ":write" '$lista' "$9" ":update_resumen" "repo"  "Modifcio_resumen_$i"; exec bash"
-    sleep 0.001
+    
     i=$(( i + 1))
 done
 
@@ -105,7 +105,7 @@ i=1
 while [ $i -le $5 ]
 do
     gnome-terminal -x bash -c "bash $(pwd)/initRep.sh "wprinci$i" "$8" ":wprinci$i" ":write" '$lista' "$9" ":update_principal" "repo" "Modifcio_principal_$i"; exec bash"
-    sleep 0.001
+    
     i=$(( i + 1))
 done
 
@@ -114,6 +114,6 @@ i=1
 while [ $i -le $6 ]
 do
     gnome-terminal -x bash -c "bash $(pwd)/initRep.sh "wentre$i" "$8" ":wentre$i" ":write" '$lista' "$9" ":update_entrega" "{:repo,:\"repo@127.0.0.1\"}" "Modifcio_entrega_$i"; exec bash"
-    sleep 0.001
+    
     i=$(( i + 1))
 done
