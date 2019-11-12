@@ -64,7 +64,7 @@ defmodule LectEscrit do
 
     # Thread encargado de escuchar las REQUEST de los demás procesos
     pid_thread =
-      spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor, pid_mutex])
+      spawn(LectEscrit, :receive_petition, [procesos_espera, op_type, pid_servidor, pid_mutex, self()])
 
     # Conectamos a todos los procesos de la lista <procesos>
     procesos = procesar_lista(procesos, Node.self())
@@ -153,18 +153,8 @@ defmodule LectEscrit do
     estado = get(pid_servidor, :estado)
     estado = :trying
     set(pid_servidor, :estado, estado)
-
-    myTime = get(pid_servidor, :tiempo)
-
-    # myTime = myTime + 1
-    IO.puts("Tiempo recibido: #{myTime}")
-    myTime = Time.add(myTime, 60)
-    IO.puts("Tiempo cambiado: #{myTime}")
-
-    set(pid_servidor, :tiempo, myTime)
-
-    # Fin de exclusión mútua
     signal(pid_mutex)
+    
     # Hacemos REQUEST
     # send_petition(procesos, op_type, pid_servidor, pid_thread)
     Enum.map(procesos, fn x -> send_petition(x, op_type, pid_servidor, pid_thread, pid_mutex) end)
@@ -196,15 +186,22 @@ defmodule LectEscrit do
   end
 
   def send_petition(process, op_type, pid_servidor, pid_thread, pid_mutex) do
+
     wait(pid_mutex)
-    # Consultamos valor de myTime a servidor de variables
     myTime = get(pid_servidor, :tiempo)
+    # myTime = myTime + 1
+    IO.puts("Tiempo recibido: #{myTime}")
+    myTime = Time.add(myTime, 60)
+    IO.puts("Tiempo cambiado: #{myTime}")
+    set(pid_servidor, :tiempo, myTime)
+    # Fin de exclusión mútua
     signal(pid_mutex)
+
     # Enviamos request a cada uno de los procesos
     IO.puts("Enviando REQUEST a #{inspect(process)}")
     send(
       process,
-      {:request, myTime, self(), op_type}
+      {:request, myTimex, self(), op_type}
     )
   end
 
@@ -227,7 +224,7 @@ defmodule LectEscrit do
   # En esta función puedo recibir dos tipos de mensaje:
   # *Peticion de mi proceso padre de que necesita la lista de procesos_espera con lo que se la enviare
   # *Mensajes de REQUEST del resto de procesos.
-  def receive_petition(procesos_espera, myOp, pid_servidor, pid_mutex) do
+  def receive_petition(procesos_espera, myOp, pid_servidor, pid_mutex, mi_pid) do
     exclude = %{read: %{read: false, write: true}, write: %{read: true, write: true}}
 
     receive do
@@ -241,7 +238,7 @@ defmodule LectEscrit do
         # mt -> variable temporal
         mt = myTime
         # Calculamos el maximo de los relojes logicos
-        myTime = Enum.max([myTime, other_time])
+        myTime = Time.add(Enum.max([myTime, other_time]),60)
         # Actualizamos valor a servidor de variables
         send(
           pid_servidor,
@@ -258,7 +255,7 @@ defmodule LectEscrit do
         #IO.puts("Exclusion: #{exclude[myOp][other_op]}")
         # Falta comprobar el estado(out,in)
         #prio = estado != :out && Time.compare(other_time, mt) == :gt && exclude[myOp][other_op]
-        prio = estado != :out && Time.diff(other_time, mt, :millisecond) > 0 && exclude[myOp][other_op]
+        prio = estado != :out && (Time.diff(other_time, mt, :millisecond) > 0 || (Time.diff(other_time, mt, :millisecond) == 0 && mi_pid > pid) ) && exclude[myOp][other_op] 
         IO.puts("Mi prioridad es: #{prio}")
         signal(pid_mutex)
 
@@ -277,7 +274,7 @@ defmodule LectEscrit do
         end
 
         # Llamada recursiva
-        receive_petition(procesos_espera, myOp, pid_servidor, pid_mutex)
+        receive_petition(procesos_espera, myOp, pid_servidor, pid_mutex, mi_pid)
 
       {:fin_operacion} -> IO.puts("Muere receive_petition")
         # Hemos recibido indicación de acabar
