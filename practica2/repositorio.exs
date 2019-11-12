@@ -48,6 +48,7 @@ end
 defmodule LectEscrit do
   # Type indica si lector o escritor
   def init(op_type, procesos) do
+    Process.sleep(2000)
     # La uso para el perm_delayed
     procesos_espera = []
     # Cogemos marca temporal de la peticion
@@ -65,12 +66,13 @@ defmodule LectEscrit do
 
     # Conectamos a todos los procesos de la lista <procesos>
     procesos = procesar_lista(procesos, Node.self())
+    # IO.puts("Procesos conectados")
+    # IO.inspect(procesos)
     conectarTodos(procesos, pid_thread)
-
+    IO.puts("Aqui llego")
     # <pid_procesos> contiene los pid de los procesos REQUEST de los otros nodos
     pid_procesos = reconocer_procesos(procesos)
-    # IO.inspect(pid_procesos)
-
+    
     #Parámetros que devuelve la función init
     {pid_procesos, pid_servidor, pid_thread, pid_mutex}
 
@@ -91,8 +93,9 @@ defmodule LectEscrit do
       pid_th =
         receive do
           {:pid_thread, pid_thread} -> pid_thread
+                                      #  IO.puts("Recibido permiso de ")
+                                      #  IO.inspect(pid_thread)
         end
-
       [_ | resto] = lista
       lista = resto
       [pid_th] ++ reconocer_procesos(lista)
@@ -126,7 +129,6 @@ defmodule LectEscrit do
     [{at, node} | resto] = procesos
     procesos = resto
     Node.connect(node)
-
     send(
       {at, node},
       {:pid_thread, pid_thread}
@@ -159,9 +161,8 @@ defmodule LectEscrit do
     # Hacemos REQUEST
     # send_petition(procesos, op_type, pid_servidor, pid_thread)
     Enum.map(procesos, fn x -> send_petition(x, op_type, pid_servidor, pid_thread) end)
+    
     # Esperamos confirmación de todos procesos
-    IO.inspect(procesos)
-    # receive_permission(procesos)
     Enum.map(procesos, fn x -> receive_permission(x) end)
     wait(pid_mutex)
     estado = :in
@@ -180,7 +181,6 @@ defmodule LectEscrit do
 
     # Pedimos al thread que nos proporcione la lista de delayed
     procesos_espera = get(pid_servidor, :procesos)
-
     # Enviamos permiso a todos los procesos encolados
     Enum.map(procesos_espera, fn x -> send_permission(x, pid_thread) end)
 
@@ -208,9 +208,7 @@ defmodule LectEscrit do
   def receive_permission(x) do
     receive do
       # Recibimos confirmacion de todos procesos y eliminamos de la lista
-      {:ok, pid} ->
-        IO.puts("Nos ha llegado permiso de")
-        IO.inspect(pid)
+      {:ok, pid} -> nil
     end
   end
 
@@ -247,26 +245,28 @@ defmodule LectEscrit do
         IO.puts("Mi op: #{myOp}, su op: #{other_op}")
         IO.puts("Exclusion: #{exclude[myOp][other_op]}")
         # Falta comprobar el estado(out,in)
-        prio = estado != :out && Time.compare(other_time, mt) == :gt && exclude[myOp][other_op]
+        prio = estado != :out && Time.diff(other_time, mt, :millisecond) > 0 && exclude[myOp][other_op]
         IO.puts("La prioridad es: #{prio}")
         signal(pid_mutex)
 
+        procesos_espera=
         if prio do
           procesos_espera = procesos_espera ++ [pid]
           # Actualizamos valor a servidor de variables
           set(pid_servidor, :procesos, procesos_espera)
+          procesos_espera
         else
           send(
             pid,
             {:ok, self()}
           )
+          procesos_espera
         end
 
         # Llamada recursiva
         receive_petition(procesos_espera, myOp, pid_servidor, pid_mutex)
 
-      {:fin_operacion} ->
-        nil
+      {:fin_operacion} -> IO.puts("Muere receive_petition")
         # Hemos recibido indicación de acabar
     end
   end

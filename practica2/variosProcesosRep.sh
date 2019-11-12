@@ -57,14 +57,12 @@ while [ $i -le $6 ]
 do
     lista+="{:wentre$i,:\"wentre$i@$8\"}"
     i=$(( i + 1))
-    if [ $i -gt $6 ]
+    if [ $i -le $6 ]
     then
-        lista+="]"
-    else
         lista+=","
     fi
 done
-
+lista+="]"
 echo $lista
 # Lanzamos procesos lectores en Resumen
 i=1

@@ -21,6 +21,7 @@ defmodule Pruebas do
     
     #En este punto, el proceso se encuentra en sección crítica
     #Muestra por pantalla el momento exacto en el que entra en SC
+    IO.puts("entramos en SC en ")
     IO.inspect(Time.utc_now())
     
     #Comprueba si es un proceso de lectura o escritura
@@ -47,9 +48,14 @@ defmodule Pruebas do
         {:reply, texto} -> IO.puts("Valor de #{where} es #{texto}")
       end
     end
+    Process.sleep(1000)
     #Zona de Post-protocol
     end_op(pid_thread, pid_servidor)
     #Acabamos procesos
-    end_process(pid_servidor, pid_thread, pid_mutex)
+    IO.puts("FINAL")
+    receive do
+
+    end
+    #end_process(pid_servidor, pid_thread, pid_mutex)
   end
 end
