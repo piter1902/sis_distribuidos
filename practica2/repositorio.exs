@@ -191,7 +191,7 @@ defmodule LectEscrit do
     myTime = get(pid_servidor, :tiempo)
     # myTime = myTime + 1
     IO.puts("Tiempo recibido: #{myTime}")
-    myTime = Time.add(myTime, 60)
+    myTime = Time.add(myTime, 1)
     IO.puts("Tiempo cambiado: #{myTime}")
     set(pid_servidor, :tiempo, myTime)
     # Fin de exclusión mútua
@@ -238,7 +238,7 @@ defmodule LectEscrit do
         # mt -> variable temporal
         mt = myTime
         # Calculamos el maximo de los relojes logicos
-        myTime = Time.add(Enum.max([myTime, other_time]),60)
+        myTime = Time.add(Enum.max([myTime, other_time]),1)
         # Actualizamos valor a servidor de variables
         send(
           pid_servidor,
@@ -255,7 +255,7 @@ defmodule LectEscrit do
         #IO.puts("Exclusion: #{exclude[myOp][other_op]}")
         # Falta comprobar el estado(out,in)
         #prio = estado != :out && Time.compare(other_time, mt) == :gt && exclude[myOp][other_op]
-        prio = estado != :out && (Time.diff(other_time, mt, :millisecond) > 0 || (Time.diff(other_time, mt, :millisecond) == 0 && mi_pid > pid) ) && exclude[myOp][other_op] 
+        prio = estado != :out && (Time.diff(other_time, mt, :millisecond) > 0 || (Time.diff(other_time, mt, :millisecond) == 0 && mi_pid < pid) ) && exclude[myOp][other_op] 
         IO.puts("Mi prioridad es: #{prio}")
         signal(pid_mutex)
 
