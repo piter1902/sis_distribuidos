@@ -46,13 +46,12 @@ defmodule Repositorio do
 end
 
 defmodule LectEscrit do
-  # Type indica si lector o escritor
+  # op_type indica si lector o escritor
   def init(op_type, procesos) do
 
-    # La uso para el perm_delayed
+    # Lista que contiene todos procesos en espera
     procesos_espera = []
     # Cogemos marca temporal de la peticion
-    #myTime = Time.utc_now()
     myTime = 0
     estado = :out
     # Thread encargado de la gestion de las variables compartidas (servidor de variables)
@@ -67,37 +66,22 @@ defmodule LectEscrit do
 
     # Conectamos a todos los procesos de la lista <procesos>
     procesos = procesar_lista(procesos, Node.self())
-    # IO.puts("Procesos conectados")
-    # IO.inspect(procesos)
+    IO.inspect(procesos);
     conectarTodos(procesos, pid_thread)
     # <pid_procesos> contiene los pid de los procesos REQUEST de los otros nodos
-    #pid_procesos = reconocer_procesos(procesos)
     pid_procesos = Enum.map(procesos, fn _ -> receive do {:pid_thread, pid_thread} -> pid_thread end end)
-    #IO.inspect(pid_procesos)
 
     #Parámetros que devuelve la función init
     {pid_procesos, pid_servidor, pid_thread, pid_mutex}
 
-    # Desacoplamos el codigo de la seccion critica de lo que es el init del sistema
-    # begin_op(op_type, pid_procesos, pid_servidor, pid_thread, pid_mutex)
-    # IO.puts("Estoy en SC #{Node.self()}")
-    # IO.inspect(Time.utc_now())
-
-    # myTime = get(pid_servidor, :tiempo)
-
-    # IO.puts(myTime)
-    # Process.sleep(3000)
-    # end_op(pid_thread, pid_servidor)
   end
 
   def reconocer_procesos(lista) do
     if lista != [] do
-    #IO.puts("entro a reconocer_procesos")
+    
       pid_th =
         receive do
           {:pid_thread, pid_thread} -> pid_thread
-                                      #  IO.puts("Recibido permiso de ")
-                                      #  IO.inspect(pid_thread)
         end
       [_ | resto] = lista
       lista = resto
@@ -113,7 +97,6 @@ defmodule LectEscrit do
       procesos = resto
 
       if nodo != comparar do
-        # Lo añadimos a la lista
         [{at, nodo}] ++ procesar_lista(resto, comparar)
       else
         procesar_lista(resto, comparar)
@@ -123,24 +106,17 @@ defmodule LectEscrit do
     end
   end
 
-  def conectarTodos(procesos, _) when procesos == [] do
-     #IO.puts("Conectado a todos")
-     #IO.puts(inspect(Node.list()))
-  end
-
-  def conectarTodos(procesos, pid_thread) when procesos != [] do
-    [{at, node} | resto] = procesos
-    procesos = resto
-    #Node.connect(node)
-
-    #IO.puts("Envio mi thrad a #{inspect(node)}")
-    send(
-      {at, node},
-      {:pid_thread, pid_thread}
-    )
-
-    # IO.puts("Hola #{node}")
-    conectarTodos(procesos, pid_thread)
+  def conectarTodos(procesos, pid_thread) do
+    if procesos != [] do
+      [{at, node} | resto] = procesos
+      procesos = resto
+      
+      send(
+        {at, node},
+        {:pid_thread, pid_thread}
+      )
+      conectarTodos(procesos, pid_thread)
+    end
   end
 
   def begin_op(op_type,procesos, pid_servidor, pid_thread, pid_mutex) do

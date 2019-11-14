@@ -57,17 +57,18 @@ end
 
 defmodule Cliente do
 
-  defp launch(pid, op, 1) do
+  defp launch(pid, 1) do
 	send(pid, {self, 1500})
 	receive do 
 		{:result, l} -> l
 	end
   end
 
-  defp launch(pid, op, n) when n != 1 do
-  	if rem(n, 3) == 0, do: number = 100, else: number = 36
+  defp launch(pid, n) when n != 1 do
+  	number =
+	if rem(n, 3) == 0, do: 100, else: 36
 	send(pid, {self, :random.uniform(number)})
-	launch(pid, op, n - 1)
+	launch(pid, n - 1)
   end 
   
   def genera_workload(server_pid) do

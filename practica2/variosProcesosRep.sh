@@ -51,6 +51,7 @@ do
     lista+="{:wprinci$i,:\"wprinci$i@$8\"},"
     i=$(( i + 1))
 done
+
 # Bucle para generar lista de procesos escritor en Entrega
 i=1
 while [ $i -le $6 ]
