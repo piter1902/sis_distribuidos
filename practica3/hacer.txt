@@ -1,0 +1,1 @@
+Tabla con entradas y algoritmos, y que aparezcan todos los fallos posibles, y como solucionarlos.
