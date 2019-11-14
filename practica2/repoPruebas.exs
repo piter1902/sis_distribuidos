@@ -14,6 +14,9 @@ import LectEscrit
 defmodule Pruebas do
   def init_prueba(op_type, procesos, where, pid_repositorio, texto) do
     #La función init inicializa el sistema y devuelve parámetros necesarios en funciones begin_op y end_op
+    if op_type == :read do
+      Process.sleep(500)
+    end
     {procesos_req, pid_servidor, pid_thread, pid_mutex} = init(op_type, procesos)
 
     #Zona pre-protocol
