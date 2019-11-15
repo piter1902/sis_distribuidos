@@ -9,28 +9,28 @@ import Fib
 
 defmodule Servidor do
   def server(dir_pool) do
-    Process.register(self(),:master)
+    Process.register(self(), :master)
     server_p(dir_pool)
   end
 
   defp server_p(dir_pool) do
     pid_pool = {:pool, dir_pool}
     # Escuchamos peticiones del cliente
-    {client, op, limits,time, nEnvio} =
+    {client, op, limits, time, nEnvio} =
       receive do
-        {client, op, limits,time,nEnvio} -> {client, op, limits,time,nEnvio}
+        {client, op, limits, time, nEnvio} -> {client, op, limits, time, nEnvio}
       end
 
     spawn(
       Servidor,
       :comunicar,
-      [client, pid_pool, op, Enum.to_list(limits),time,nEnvio]
+      [client, pid_pool, op, Enum.to_list(limits), time, nEnvio]
     )
 
     server_p(dir_pool)
   end
 
-  def comunicar(pid_client, pool, op, lista,time,nEnvio) do
+  def comunicar(pid_client, pool, op, lista, time, nEnvio) do
     # Pide worker al pool
     send(
       pool,
@@ -59,14 +59,15 @@ defmodule Servidor do
 
     send(
       pid_client,
-      {:fin, result,time,nEnvio}
+      {:fin, result, time, nEnvio}
     )
   end
 end
 
 defmodule Pool do
   def pool() do
-    Process.register(self(),:pool)
+    Process.register(self(), :pool)
+
     lista_disponibles = [
       :"w1@155.210.154.198",
       :"w1@155.210.154.198",
