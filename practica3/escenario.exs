@@ -71,7 +71,7 @@ defmodule Proxy do
     result =
       receive do
         result ->
-          # Gestion de errores
+          # Gestion de errores -> Comprobacion de que el resultado que obtenemos es valido (p.ej: es int y no float)
           # No hay errores -> Devolvemos el resultado al cliente y terminamos
           end_proxy(result, pid_client, pool, pid_w)
       after
