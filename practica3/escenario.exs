@@ -31,50 +31,101 @@ defmodule Servidor do
 
     server_p(dir_pool, proxy_machine)
   end
+end
 
-  defmodule Proxy do
-    def proxy(pid_client, pool, op, num, time, nEnvio) do
-      # Pide worker al pool
-      send(
-        pool,
-        {:peti, self()}
-      )
+defmodule Proxy do
+  # 300 ms de timeout
+  @timeout 300
+  # 3 reintentos permitidos por tarea
+  @limite_tarea 3
+  def proxy(pid_client, pool, op, num, time, nEnvio, reintento) do
+    # Pide worker al pool
+    send(
+      pool,
+      {:peti, self()}
+    )
 
-      # Recibimos el worker con el que trabajaremos
-      pid_w =
-        receive do
-          {:ok, pid_w} -> pid_w
-        end
+    # Esperamos a aceptar la peticion
+    proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, reintento)
+  end
 
-      # Enviamos el mensaje al worker
-      send(
-        pid_w,
-        {:req, {self(), num}}
-      )
+  def proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, reintento) do
+    # Recibimos el worker con el que trabajaremos
+    pid_w =
+      receive do
+        {:ok, pid_w} -> pid_w
+      end
 
-      # Esperamos al resultado -> con timeout
-      result =
-        receive do
-          result -> result
-        end
+    # Iniciamos la operacion del proxy
+    proxy_operation(pid_client, pool, op, num, time, nEnvio, reintento)
+  end
 
-      # Gestion de errores
-      # Devolvemos el worker al pool
-      send(
-        pool,
-        {:ok, pid_w}
-      )
+  def proxy_operation(pid_client, pool, op, num, time, nEnvio, reintento) do
+    # Enviamos el mensaje al worker
+    send(
+      pid_w,
+      {:req, {self(), num}}
+    )
 
-      # Devolvemos el resultado al cliente
-      # send(
-      #   pid_client,
-      #   {:fin, result, time, nEnvio}
-      # )
-      send(
-        pid_client,
-        {:result, result}
-      )
-    end
+    # Esperamos al resultado -> con timeout
+    result =
+      receive do
+        result ->
+          # Gestion de errores
+          # No hay errores -> Devolvemos el resultado al cliente y terminamos
+          end_proxy(result, pid_client, pool)
+      after
+        @timeout ->
+          if Node.ping(pid_w) == :pong do
+            # El nodo pid_w esta vivo -> reintentar tarea N veces
+            if reintento == @limite_tarea do
+              # Hemos llegado al limite -> El nodo esta congestionado => Pedimos otro a pool y reintentamos
+              # Le devolvemos el worker a pool
+              send(
+                pool,
+                {:ok, pid_w}
+              )
+
+              # Pedimos otro y reintentamos (reintento = 0)
+              send(
+                pool,
+                {:peti, self()}
+              )
+
+              proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, 0)
+            else
+              proxy_operation(pid_client, pool, op, num, time, nEnvio, reintento + 1)
+            end
+          else
+            # El nodo ha caido (no ha devuelto :pong) -> :pang
+            # Comunicamos al pool la caida y reintentamos la tarea
+            send(
+              pool,
+              {:fallo2, pid_w}
+            )
+
+            # Volvemos a esperar el envio del worker
+            proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, reintento)
+          end
+      end
+  end
+
+  def end_proxy(result, pid_client, pool) do
+    # Devolvemos el worker al pool
+    send(
+      pool,
+      {:ok, pid_w}
+    )
+
+    # Devolvemos el resultado al cliente
+    # send(
+    #   pid_client,
+    #   {:fin, result, time, nEnvio}
+    # )
+    send(
+      pid_client,
+      {:result, result}
+    )
   end
 end
 
