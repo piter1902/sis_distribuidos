@@ -1,6 +1,6 @@
-# AUTORES: nombres y apellidos
-# NIAs: números de identificacion de los alumnos
-# FICHERO: nombre del fichero
+# AUTORES: Pedro Tamargo Allué y Juan José Tambo Tambo
+# NIAs: 758267 y 755742
+# FICHERO: escenario.exs
 # FECHA: fecha de realizacion
 # TIEMPO: tiempo en horas de codificación
 # DESCRIPCION: breve descripcion del contenido del fichero
@@ -8,9 +8,9 @@
 import Fib
 
 defmodule Servidor do
-  def server(dir_pool) do
+  def server(dir_pool, proxy_machine) do
     Process.register(self(), :master)
-    server_p(dir_pool)
+    server_p(dir_pool, proxy_machine)
   end
 
   defp server_p(dir_pool, proxy_machine) do
@@ -57,10 +57,10 @@ defmodule Proxy do
       end
 
     # Iniciamos la operacion del proxy
-    proxy_operation(pid_client, pool, op, num, time, nEnvio, reintento)
+    proxy_operation(pid_client, pool, op, num, time, nEnvio, pid_w, reintento)
   end
 
-  def proxy_operation(pid_client, pool, op, num, time, nEnvio, reintento) do
+  def proxy_operation(pid_client, pool, op, num, time, nEnvio, pid_w, reintento) do
     # Enviamos el mensaje al worker
     send(
       pid_w,
@@ -73,7 +73,7 @@ defmodule Proxy do
         result ->
           # Gestion de errores
           # No hay errores -> Devolvemos el resultado al cliente y terminamos
-          end_proxy(result, pid_client, pool)
+          end_proxy(result, pid_client, pool, pid_w)
       after
         @timeout ->
           if Node.ping(pid_w) == :pong do
@@ -94,7 +94,7 @@ defmodule Proxy do
 
               proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, 0)
             else
-              proxy_operation(pid_client, pool, op, num, time, nEnvio, reintento + 1)
+              proxy_operation(pid_client, pool, op, num, time, nEnvio, pid_w, reintento + 1)
             end
           else
             # El nodo ha caido (no ha devuelto :pong) -> :pang
@@ -110,7 +110,7 @@ defmodule Proxy do
       end
   end
 
-  def end_proxy(result, pid_client, pool) do
+  def end_proxy(result, pid_client, pool, pid_w) do
     # Devolvemos el worker al pool
     send(
       pool,
@@ -152,7 +152,7 @@ defmodule Pool do
   #   :fallo2 -> fallo de tipo2 ==> El nodo ha caido
   #   :fallo1 -> fallo de tipo1 ==> El nodo responde mal
   defp pool(disp, ocu, pend) do
-    # Esperamos una peticion del master
+    # Esperamos una peticion del proxy
     {disp, ocu, pend} =
       receive do
         {:peti, pid} ->
@@ -162,7 +162,7 @@ defmodule Pool do
 
             # Marcamos al worker que enviamos como ocupado
             ocu = ocu ++ [head]
-            # Enviamos un worker al master
+            # Enviamos un worker al proxy
             send(
               pid,
               {:ok, head}
@@ -212,7 +212,7 @@ defmodule Pool do
 
             # Marcamos al worker que enviamos como ocupado
             ocu = ocu ++ [head]
-            # Enviamos un worker al master
+            # Enviamos un worker al proxy
             send(
               pid,
               {:ok, head}
