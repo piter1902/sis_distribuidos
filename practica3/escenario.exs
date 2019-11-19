@@ -72,8 +72,30 @@ defmodule Proxy do
       receive do
         result ->
           # Gestion de errores -> Comprobacion de que el resultado que obtenemos es valido (p.ej: es int y no float)
-          # No hay errores -> Devolvemos el resultado al cliente y terminamos
-          end_proxy(result, pid_client, pool, pid_w)
+          if not is_integer(result) do
+            if reintento == @limite_tarea do
+              # Hemos llegado al limite -> El nodo no esta respondiendo bien => Pedimos otro a pool y reintentamos
+              # Le devolvemos el worker a pool
+              send(
+                pool,
+                {:ok, pid_w}
+              )
+
+              # Pedimos otro y reintentamos (reintento = 0)
+              send(
+                pool,
+                {:peti, self()}
+              )
+
+              proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, 0)
+            else
+              # Error en el tipo de datos. No es un entero -> Reintentamos la operacion
+              proxy_operation(pid_client, pool, op, num, time, nEnvio, pid_w, reintento + 1)
+            end
+          else
+            # No hay errores -> Devolvemos el resultado al cliente y terminamos
+            end_proxy(result, pid_client, pool, pid_w)
+          end
       after
         @timeout ->
           if Node.ping(pid_w) == :pong do
