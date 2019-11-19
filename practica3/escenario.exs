@@ -101,7 +101,7 @@ defmodule Proxy do
             # Comunicamos al pool la caida y reintentamos la tarea
             send(
               pool,
-              {:fallo2, pid_w}
+              {:fallo2, pid_w, self()}
             )
 
             # Volvemos a esperar el envio del worker
@@ -202,9 +202,9 @@ defmodule Pool do
             {disp, ocu, pend}
           end
 
-        {:fallo2, pid} ->
+        {:fallo2, pid_w, pid_proxy} ->
           # El worker ha caido -> Lo eliminamos de la lista y le proporcionamos otro
-          ocu = ocu -- [pid]
+          ocu = ocu -- [pid_w]
           # Comprobamos que podemos proporcionarle otro worker
           if disp != [] do
             [head | tail] = disp
@@ -222,7 +222,7 @@ defmodule Pool do
             IO.puts(inspect(disp))
             {disp, ocu, pend}
           else
-            pend = pend ++ [pid]
+            pend = pend ++ [pid_proxy]
             IO.puts("Estamos en el caso de no disponibles -> pend = ")
             IO.puts(inspect(pend))
             {disp, ocu, pend}
