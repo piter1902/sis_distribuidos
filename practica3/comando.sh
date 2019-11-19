@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Funcion auxiliar
+function join_by { local d=$1; shift; echo -n "$1"; shift; printf "%s" "${@/#/$d}"; }
+
 # Parametros:
 # 1. Nombre
 # 2. Maquina
@@ -10,32 +13,37 @@
 # 7. Name de "Pool" (solo se usa si eres master)
 # 8. Name de "Master" (solo se usa si eres cliente)
 
-if [ $? -ne 8 ]; then
+if [ $# -ne 8 ]; then
     echo 'El nº de parametros es incorrecto. Uso: bash comando.sh <name> <maquina> <tipo> <cookie> <fichero_workers> <name_proxy_machine> <name_pool> <name_master>'
     exit 1
 fi
 
+dir_master="10.1.53.105"
+dir_pool="10.1.53.105"
+dir_proxy="10.1.53.105"
+
 # Comando a ejecutar para la inicialización de iex
-comando=""
+comando="Node.connect(:\"master@$dir_master\");"
 case $3 in
     "worker")
-        comando="Process.register(self(), :$1); Worker.init()"
+        comando=$comando+"Process.register(self(), :$1); Worker.init()"
     ;;
 
     "master")
-        comando="Servidor.server($7,$6)"
+        comando=$comando+"Servidor.server(:\"$7@$dir_pool\",:\"$6@$dir_proxy\")"
     ;;
 
     "cliente")
-        comando="Servidor.genera_workload($8)"
+        comando=$comando+"Cliente.genera_workload({:master,:\"$8@$dir_master\"})"
     ;;
 
     "proxy")
-        comando=""
+        comando=$comando+""
     ;;
 
     "pool")
-        comando="Pool.pool($(cat $5))"
+        lista="[$(join_by , $(cat $5 | tr '\n' ' ' ))]"
+        comando=$comando+"Pool.pool($lista)"
     ;;
 esac
 
