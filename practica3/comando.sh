@@ -26,24 +26,25 @@ dir_proxy="10.1.53.105"
 comando="Node.connect(:\"master@$dir_master\");"
 case $3 in
     "worker")
-        comando=$comando+"Process.register(self(), :$1); Worker.init()"
+        comando=$comando"Process.register(self(), :$1); Worker.init()"
     ;;
 
     "master")
-        comando=$comando+"Servidor.server(:\"$7@$dir_pool\",:\"$6@$dir_proxy\")"
+        comando=$comando"Servidor.server(:\"$7@$dir_pool\",:\"$6@$dir_proxy\")"
     ;;
 
     "cliente")
-        comando=$comando+"Cliente.genera_workload({:master,:\"$8@$dir_master\"})"
+        comando=$comando"Cliente.genera_workload({:master,:\"$8@$dir_master\"})"
     ;;
 
     "proxy")
-        comando=$comando+""
+        iex --name $1'@'$2 --cookie $4 -r "worker.exs" "escenario.exs" 2>'/dev/null'
+        exit 1
     ;;
 
     "pool")
         lista="[$(join_by , $(cat $5 | tr '\n' ' ' ))]"
-        comando=$comando+"Pool.pool($lista)"
+        comando=$comando"Pool.pool($lista)"
     ;;
 esac
 
