@@ -59,7 +59,7 @@ defmodule Proxy do
     )
 
     # Esperamos a aceptar la peticion
-    proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, reintento, pid_proxy)
+    proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, 0, pid_proxy)
   end
 
   # Funcion mediante la cual los proxys se conectan entre ellos
@@ -175,7 +175,7 @@ defmodule Proxy do
             {:peti, self()}
           )
 
-          proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, 0)
+          proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, 0, pid_proxy)
         else
           proxy_operation(
             pid_client,
@@ -206,8 +206,9 @@ defmodule Proxy do
 
       if tipo == :rutina do
         # Volvemos a esperar el envio del worker
-        proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, reintento)
+        proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, 0, pid_proxy)
       end
+
       # En caso tipo == final, finalizaría ejecución
     end
   end
@@ -322,7 +323,7 @@ defmodule Pool do
             ocu = ocu ++ [head]
             # Enviamos un worker al proxy
             send(
-              pid,
+              pid_proxy,
               {:ok, head}
             )
 
