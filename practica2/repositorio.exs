@@ -1,8 +1,8 @@
 # AUTOR: Pedro Tamargo -  Juan José Tambo 
 # NIAs: 
 # FICHERO: repositorio.exs
-# FECHA: 11 de noviembre de 2019
-# TIEMPO: 3 horas
+# FECHA: 15 de noviembre de 2019
+# TIEMPO: 6 horas
 # DESCRIPCI'ON:  	Implementa un repositorio para gestionar el enunciado de un trabajo de asignatura.
 # 				El enunciado tiene tres partes: resumen, parte principal y descripci'on de la entrega.
 # 				El repositorio consta de un servidor que proporciona acceso individual a cada parte del enunciado,
