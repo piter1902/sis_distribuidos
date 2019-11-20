@@ -30,7 +30,6 @@ end
 
 defmodule Worker do
   def init do
-    IO.inspect(Node.list())
     Process.sleep(10000)
     worker(&Fib.fibonacci_tr/1, 0, :random.uniform(10))
   end
@@ -62,7 +61,6 @@ defmodule Worker do
 
     receive do
       {:req, {pid, args}} -> if not omission, do: send(pid, op.(args))
-                             IO.puts("Ejecuto con #{op} el numero #{args}")
     end
 
     worker(new_op, rem(service_count + 1, k), k)
@@ -75,6 +73,7 @@ defmodule Cliente do
 
     receive do
       {:result, l} -> l
+        IO.puts("Nos ha llegado: #{l}")
     end
   end
 

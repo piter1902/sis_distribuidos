@@ -49,7 +49,7 @@ defmodule Proxy do
   @timeout 300
   # 3 reintentos permitidos por tarea
   @limite_tarea 3
-  def proxy(pid_client, pool, op, num, time, nEnvio, pid_proxy) do
+  def proxy(pid_client, pool, num, pid_proxy) do
     IO.puts("Soy proxy y acabo de empezar")
     # PRE-PROTOCOL
     pid_proxy = pre_protocol(pid_proxy)
@@ -61,7 +61,7 @@ defmodule Proxy do
     )
 
     # Esperamos a aceptar la peticion
-    proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, 0, pid_proxy)
+    proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy)
   end
 
   # Funcion mediante la cual los proxys se conectan entre ellos
@@ -91,7 +91,7 @@ defmodule Proxy do
     end
   end
 
-  def proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, reintento, pid_proxy) do
+  def proxy_aceptar_peticion(pid_client, pool, num, reintento, pid_proxy) do
     # Recibimos el worker con el que trabajaremos
     pid_w =
       receive do
@@ -99,10 +99,10 @@ defmodule Proxy do
       end
 
     # Iniciamos la operacion del proxy
-    proxy_operation(pid_client, pool, op, num, time, nEnvio, pid_w, reintento, pid_proxy)
+    proxy_operation(pid_client, pool, num, pid_w, reintento, pid_proxy)
   end
 
-  def proxy_operation(pid_client, pool, op, num, time, nEnvio, pid_w, reintento, pid_proxy) do
+  def proxy_operation(pid_client, pool, num, pid_w, reintento, pid_proxy) do
     # Enviamos el mensaje al worker
     send(
       pid_w,
@@ -116,10 +116,7 @@ defmodule Proxy do
           comprobacion_fallo(
             pid_client,
             pool,
-            op,
             num,
-            time,
-            nEnvio,
             pid_w,
             reintento,
             pid_proxy,
@@ -135,10 +132,7 @@ defmodule Proxy do
           comprobacion_fallo(
             pid_client,
             pool,
-            op,
             num,
-            time,
-            nEnvio,
             pid_w,
             reintento,
             pid_proxy,
@@ -150,10 +144,7 @@ defmodule Proxy do
   def comprobacion_fallo(
         pid_client,
         pool,
-        op,
         num,
-        time,
-        nEnvio,
         pid_w,
         reintento,
         pid_proxy,
@@ -177,15 +168,12 @@ defmodule Proxy do
             {:peti, self()}
           )
 
-          proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, 0, pid_proxy)
+          proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy)
         else
           proxy_operation(
             pid_client,
             pool,
-            op,
             num,
-            time,
-            nEnvio,
             pid_w,
             reintento + 1,
             pid_proxy
@@ -208,7 +196,7 @@ defmodule Proxy do
 
       if tipo == :rutina do
         # Volvemos a esperar el envio del worker
-        proxy_aceptar_peticion(pid_client, pool, op, num, time, nEnvio, 0, pid_proxy)
+        proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy)
       end
 
       # En caso tipo == final, finalizaría ejecución
