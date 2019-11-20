@@ -1,1 +1,1 @@
-bash comando.sh master 10.1.53.105 master jtambo99 "notimportant" proxy pool "notimportant"
+bash comando.sh master 10.1.50.29 master jtambo99 "notimportant" proxy pool "notimportant"

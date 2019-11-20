@@ -1,1 +1,1 @@
-bash comando.sh client 10.1.53.105 client jtambo99 lista_workers.txt "notimportant" "notimportant" master
+bash comando.sh client 10.1.50.29 cliente jtambo99 lista_workers.txt "notimportant" "notimportant" master

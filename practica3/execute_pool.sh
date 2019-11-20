@@ -1,1 +1,1 @@
-bash comando.sh pool 10.1.53.105 pool jtambo99 lista_workers.txt  "notimportant" "notimportant" "notimportant"
+bash comando.sh pool 10.1.50.29 pool jtambo99 lista_workers.txt  "notimportant" "notimportant" "notimportant"

@@ -16,18 +16,19 @@ defmodule Servidor do
   defp server_p(dir_pool, proxy_machine) do
     pid_pool = {:pool, dir_pool}
     # Escuchamos peticiones del cliente
-    {client, op, num, time, nEnvio} =
+    IO.puts("Pool: #{dir_pool}")
+    {pid_cli, num}=
       receive do
-        {client, op, num, time, nEnvio} -> {client, op, num, time, nEnvio}
+        {pid_cli, num} -> {pid_cli}
       end
-
+    IO.puts("Nos ha llegado una peticion de un cliente")
     # Creamos el proxy1 para comunicarnos con el worker
     proxy1 =
       Node.spawn(
         proxy_machine,
         Proxy,
         :proxy,
-        [client, pid_pool, op, num, time, nEnvio, :vacio]
+        [pid_cli, pid_pool, num, :vacio]
       )
 
     # Creamos el proxy1 para comunicarnos con el worker
@@ -36,9 +37,9 @@ defmodule Servidor do
         proxy_machine,
         Proxy,
         :proxy,
-        [client, pid_pool, op, num, time, nEnvio, proxy1]
+        [pid_cli, pid_pool, num, proxy1]
       )
-
+    IO.puts("Peticiones enviadas a los proxys")
     server_p(dir_pool, proxy_machine)
   end
 end
@@ -49,6 +50,7 @@ defmodule Proxy do
   # 3 reintentos permitidos por tarea
   @limite_tarea 3
   def proxy(pid_client, pool, op, num, time, nEnvio, pid_proxy) do
+    IO.puts("Soy proxy y acabo de empezar")
     # PRE-PROTOCOL
     pid_proxy = pre_protocol(pid_proxy)
 

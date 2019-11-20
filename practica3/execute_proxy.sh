@@ -1,1 +1,1 @@
-bash comando.sh proxy 10.1.53.105 proxy jtambo99 "notimportant" "notimportant" "notimportant" "notimportant"
+bash comando.sh proxy 10.1.50.29 proxy jtambo99 "notimportant" "notimportant" "notimportant" "notimportant"
