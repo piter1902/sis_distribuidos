@@ -174,7 +174,9 @@ defmodule Proxy do
         pid_proxy,
         tipo
       ) do
-    if Node.ping(pid_w) == :pong do
+    {_, dir_w} = pid_w
+
+    if Node.ping(dir_w) == :pong do
       # El nodo pid_w esta vivo -> reintentar tarea N veces
       # Tipo = final, así que terminamos ejecución
       if tipo == :rutina do
@@ -211,11 +213,24 @@ defmodule Proxy do
           )
         end
       else
-        # Es el final de la operacion del proxy
+        # En este caso, el otro proxy ha terminado, comprobamos estado de nuestro Worker.
+
+        info =
+          cond do
+            num <= 36 ->
+              :fib_fib
+
+            num <= 100 ->
+              :fib_of
+
+            true ->
+              :fib_tr
+          end
+
         # Le devolvemos el worker a pool
         send(
           pool,
-          {:ok, pid_w}
+          {:ok, pid_w, info}
         )
       end
     else
@@ -294,11 +309,12 @@ defmodule Pool do
       receive do
         # Peti1 se corresponde a una petición de un número entre 1 y 36
         {:peti, pid, num} ->
+          IO.puts("Ha llegado peticion")
           # Nos llega peticion y llamamos a función para saber qué worker devolverle.
           dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid, num)
 
         {:ok, pid, info} ->
-          IO.puts("Nos ha llegado peticion de fin del worker #{pid}")
+          IO.puts("Nos ha llegado peticion de fin del worker #{inspect(pid)}")
           # Fin de worker -> anadimos a disponible
           # Comprobamos si hay alguien esperando   
           ocu = ocu -- [pid]
@@ -330,9 +346,9 @@ defmodule Pool do
           end
 
         {:fallo2, pid_w, pid_proxy, num} ->
+          IO.inspect("Ha caido un worker.")
           # El worker ha caido -> Lo eliminamos de la lista y le proporcionamos otro
           ocu = ocu -- [pid_w]
-        
       end
 
     pool(disp_tr, disp_fib, disp_of, ocu, pend)
