@@ -17,10 +17,12 @@ defmodule Servidor do
     pid_pool = {:pool, dir_pool}
     # Escuchamos peticiones del cliente
     IO.puts("Pool: #{dir_pool}")
-    {pid_cli, num}=
+
+    {pid_cli, num} =
       receive do
-        {pid_cli, num} -> {pid_cli}
+        {pid_cli, num} -> {pid_cli, num}
       end
+
     IO.puts("Nos ha llegado una peticion de un cliente")
     # Creamos el proxy1 para comunicarnos con el worker
     proxy1 =
@@ -39,6 +41,7 @@ defmodule Servidor do
         :proxy,
         [pid_cli, pid_pool, num, proxy1]
       )
+
     IO.puts("Peticiones enviadas a los proxys")
     server_p(dir_pool, proxy_machine)
   end
@@ -57,7 +60,7 @@ defmodule Proxy do
     # Pide worker al pool
     send(
       pool,
-      {:peti, self()}
+      {:peti, self(), num}
     )
 
     # Esperamos a aceptar la peticion
@@ -110,6 +113,8 @@ defmodule Proxy do
     )
 
     # Esperamos al resultado -> con timeout
+    t1 = Time.utc_now()
+
     result =
       receive do
         {:fin_proxy} ->
@@ -126,7 +131,26 @@ defmodule Proxy do
         result ->
           # Gestion de errores -> Comprobacion de que el resultado que obtenemos es valido (p.ej: es int y no float)
           # No hay errores -> Devolvemos el resultado al cliente y terminamos
-          end_proxy(result, pid_client, pool, pid_w, pid_proxy)
+          # Comprobamos el tiempo de respuesta de la operación
+          tTotal = Time.diff(Time.utc_now(), t1, :microsecond)
+
+          info =
+            cond do
+              tTotal <= 650_000 && num <= 36 ->
+                :fib_fib
+
+              tTotal <= 100 && num <= 100 ->
+                :fib_of
+
+              tTotal <= 250 && num == 1500 ->
+                :fib_tr
+
+              # Suponemos caso poco probable, pero se lo enviamos a fibonacci
+              true ->
+                :fib_fib
+            end
+
+          end_proxy(result, pid_client, pool, pid_w, pid_proxy, info)
       after
         @timeout ->
           comprobacion_fallo(
@@ -154,19 +178,21 @@ defmodule Proxy do
       # El nodo pid_w esta vivo -> reintentar tarea N veces
       # Tipo = final, así que terminamos ejecución
       if tipo == :rutina do
+        # Caso de mucho tiempo ejecución o ha lanzado excepción
         if reintento == @limite_tarea do
           # Hemos llegado al limite -> El nodo esta congestionado => Pedimos otro a pool y reintentamos
           # Le devolvemos el worker a pool
           send(
             pool,
-            {:ok, pid_w}
+            # s Hemos considerado que llegado a este punto, el nodo no va a contestar.
+            {:fallo2, pid_w}
           )
 
-          # Pedimos otro y reintentamos (reintento = 0)
-          send(
-            pool,
-            {:peti, self()}
-          )
+          # # Pedimos otro y reintentamos (reintento = 0)
+          # send(
+          #   pool,
+          #   {:peti, self(), num}
+          # )
 
           proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy)
         else
@@ -191,7 +217,7 @@ defmodule Proxy do
       # Comunicamos al pool la caida y reintentamos la tarea
       send(
         pool,
-        {:fallo2, pid_w, self()}
+        {:fallo2, pid_w, self(), num}
       )
 
       if tipo == :rutina do
@@ -203,7 +229,7 @@ defmodule Proxy do
     end
   end
 
-  def end_proxy(result, pid_client, pool, pid_w, pid_proxy) do
+  def end_proxy(result, pid_client, pool, pid_w, pid_proxy, info) do
     # POST PROTOCOL: indicamos al otro proxy acerca de nuestra finalización
     send(
       pid_proxy,
@@ -223,7 +249,7 @@ defmodule Proxy do
     # Devolvemos el worker al pool
     send(
       pool,
-      {:ok, pid_w}
+      {:ok, pid_w, info}
     )
   end
 end
@@ -241,8 +267,9 @@ defmodule Pool do
 
     lista_ocupados = []
     lista_pendientes = []
-
-    pool(lista_workers, lista_ocupados, lista_pendientes)
+    lista_fib = []
+    lista_of = []
+    pool(lista_workers, lista_fib, lista_of, lista_ocupados, lista_pendientes)
   end
 
   # Mensajes que nos pueden llegar -> 
@@ -250,15 +277,64 @@ defmodule Pool do
   #   :ok     -> peticion de fin de uso de worker (sin problemas)
   #   :fallo2 -> fallo de tipo2 ==> El nodo ha caido
   #   :fallo1 -> fallo de tipo1 ==> El nodo responde mal
-  defp pool(disp, ocu, pend) do
+  defp pool(disp_tr, disp_fib, disp_of, ocu, pend) do
     # Esperamos una peticion del proxy
-    {disp, ocu, pend} =
+    {disp_tr, disp_fib, disp_of, ocu, pend} =
       receive do
-        {:peti, pid} ->
-          if disp != [] do
-            [head | tail] = disp
-            disp = tail
+        # Peti1 se corresponde a una petición de un número entre 1 y 36
+        {:peti, pid, num} ->
+          # Nos llega peticion y llamamos a función para saber qué worker devolverle.
+          dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid, num)
 
+        {:ok, pid, info} ->
+          IO.puts("Nos ha llegado peticion de fin del worker #{pid}")
+          # Fin de worker -> anadimos a disponible
+          # Comprobamos si hay alguien esperando   
+          ocu = ocu -- [pid]
+
+          {disp_tr, disp_fib, disp_of} =
+            cond do
+              info == :fib_tr ->
+                disp_tr ++ [pid]
+                {disp_tr, disp_fib, disp_of}
+
+              info == :fib_fib ->
+                disp_fib ++ [pid]
+                {disp_tr, disp_fib, disp_of}
+
+              info == :fib_of ->
+                disp_of ++ [pid]
+                {disp_tr, disp_fib, disp_of}
+
+              true ->
+                {disp_tr, disp_fib, disp_of}
+            end
+
+          if pend != [] do
+            [{pid_proxy, num} | resto] = pend
+            pend = resto
+            dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid_proxy, num)
+          else
+            {disp_tr, disp_fib, disp_of, ocu, pend}
+          end
+
+        {:fallo2, pid_w, pid_proxy, num} ->
+          # El worker ha caido -> Lo eliminamos de la lista y le proporcionamos otro
+          ocu = ocu -- [pid_w]
+          # Comprobamos que podemos proporcionarle otro worker
+          dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid_proxy, num)
+      end
+
+    pool(disp_tr, disp_fib, disp_of, ocu, pend)
+  end
+
+  defp dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid, num) do
+    cond do
+      num <= 36 ->
+        cond do
+          disp_fib != [] ->
+            [head | tail] = disp_fib
+            disp_fib = tail
             # Marcamos al worker que enviamos como ocupado
             ocu = ocu ++ [head]
             # Enviamos un worker al proxy
@@ -267,67 +343,98 @@ defmodule Pool do
               {:ok, head}
             )
 
-            IO.puts("Disponibles ->")
-            IO.puts(inspect(disp))
-            {disp, ocu, pend}
-          else
-            pend = pend ++ [pid]
-            IO.puts("Estamos en el caso de no disponibles -> pend = ")
-            IO.puts(inspect(pend))
-            {disp, ocu, pend}
-          end
+            {disp_tr, disp_fib, disp_of, ocu, pend}
 
-        {:ok, pid} ->
-          IO.puts("Nos ha llegado peticion de fin del worker #{pid}")
-          # Fin de worker -> anadimos a disponible
-          # Comprobamos si hay alguien esperando        
-          if pend != [] do
-            IO.puts("Hay algun pendiente despues de dejar worker.")
-            # Existe alguien esperando -> Le damos servicio
-            [pid_pendiente | resto] = pend
-            pend = resto
-
-            send(
-              pid_pendiente,
-              {:ok, pid}
-            )
-
-            {disp, ocu, pend}
-          else
-            # Lo devolvemos a la lista de disponibles
-            IO.puts("No hay ningun pendiente despues de dejar worker")
-            ocu = ocu -- [pid]
-            disp = disp ++ [pid]
-            {disp, ocu, pend}
-          end
-
-        {:fallo2, pid_w, pid_proxy} ->
-          # El worker ha caido -> Lo eliminamos de la lista y le proporcionamos otro
-          ocu = ocu -- [pid_w]
-          # Comprobamos que podemos proporcionarle otro worker
-          if disp != [] do
-            [head | tail] = disp
-            disp = tail
-
+          disp_of != [] ->
+            [head | tail] = disp_of
+            disp_of = tail
             # Marcamos al worker que enviamos como ocupado
             ocu = ocu ++ [head]
             # Enviamos un worker al proxy
             send(
-              pid_proxy,
+              pid,
               {:ok, head}
             )
 
-            IO.puts("Disponibles ->")
-            IO.puts(inspect(disp))
-            {disp, ocu, pend}
-          else
-            pend = pend ++ [pid_proxy]
-            IO.puts("Estamos en el caso de no disponibles -> pend = ")
-            IO.puts(inspect(pend))
-            {disp, ocu, pend}
-          end
-      end
+            {disp_tr, disp_fib, disp_of, ocu, pend}
 
-    pool(disp, ocu, pend)
+          disp_tr != [] ->
+            [head | tail] = disp_tr
+            disp_tr = tail
+            # Marcamos al worker que enviamos como ocupado
+            ocu = ocu ++ [head]
+            # Enviamos un worker al proxy
+            send(
+              pid,
+              {:ok, head}
+            )
+
+            {disp_tr, disp_fib, disp_of, ocu, pend}
+
+          # No hay ninguna lista disponible
+          true ->
+            pend = pend ++ [{pid, num}]
+            IO.puts("Estamos en el caso de no disponibles -> pend = ")
+            # IO.puts(inspect(pend))
+            {disp_tr, disp_fib, disp_of, ocu, pend}
+        end
+
+      num <= 100 ->
+        cond do
+          disp_of != [] ->
+            [head | tail] = disp_of
+            disp_of = tail
+            # Marcamos al worker que enviamos como ocupado
+            ocu = ocu ++ [head]
+            # Enviamos un worker al proxy
+            send(
+              pid,
+              {:ok, head}
+            )
+
+            {disp_tr, disp_fib, disp_of, ocu, pend}
+
+          disp_tr != [] ->
+            [head | tail] = disp_tr
+            disp_tr = tail
+            # Marcamos al worker que enviamos como ocupado
+            ocu = ocu ++ [head]
+            # Enviamos un worker al proxy
+            send(
+              pid,
+              {:ok, head}
+            )
+
+            {disp_tr, disp_fib, disp_of, ocu, pend}
+
+          # No hay ninguna lista disponible
+          true ->
+            pend = pend ++ [{pid, num}]
+            IO.puts("Estamos en el caso de no disponibles -> pend = ")
+            # IO.puts(inspect(pend))
+            {disp_tr, disp_fib, disp_of, ocu, pend}
+        end
+
+      # Caso de 1500
+      true ->
+        if disp_tr != [] do
+          [head | tail] = disp_tr
+          disp_tr = tail
+          # Marcamos al worker que enviamos como ocupado
+          ocu = ocu ++ [head]
+          # Enviamos un worker al proxy
+          send(
+            pid,
+            {:ok, head}
+          )
+
+          {disp_tr, disp_fib, disp_of, ocu, pend}
+        else
+          pend = pend ++ [{pid, num}]
+          IO.puts("Estamos en el caso de no disponibles -> pend = ")
+          # IO.puts(inspect(pend))
+          {disp_tr, disp_fib, disp_of, ocu, pend}
+        end
+    end
   end
 end
