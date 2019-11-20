@@ -47,6 +47,7 @@ case $3 in
 
     "pool")
         lista="[$(join_by , $(cat $5 | tr '\n' ' ' ))]"
+        #echo $lista
         comando=$comando"Pool.pool($lista)"
     ;;
 esac
