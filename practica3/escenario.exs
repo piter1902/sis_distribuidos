@@ -188,6 +188,11 @@ defmodule Proxy do
             {:fallo2, pid_w}
           )
 
+          send(
+            pool,
+            {:peti, self(), num}
+          )
+
           # # Pedimos otro y reintentamos (reintento = 0)
           # send(
           #   pool,
@@ -206,6 +211,7 @@ defmodule Proxy do
           )
         end
       else
+        # Es el final de la operacion del proxy
         # Le devolvemos el worker a pool
         send(
           pool,
@@ -221,6 +227,11 @@ defmodule Proxy do
       )
 
       if tipo == :rutina do
+        send(
+          pool,
+          {:peti, self(), num}
+        )
+
         # Volvemos a esperar el envio del worker
         proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy)
       end
@@ -321,8 +332,7 @@ defmodule Pool do
         {:fallo2, pid_w, pid_proxy, num} ->
           # El worker ha caido -> Lo eliminamos de la lista y le proporcionamos otro
           ocu = ocu -- [pid_w]
-          # Comprobamos que podemos proporcionarle otro worker
-          dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid_proxy, num)
+        
       end
 
     pool(disp_tr, disp_fib, disp_of, ocu, pend)
