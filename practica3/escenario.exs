@@ -118,6 +118,7 @@ defmodule Proxy do
     result =
       receive do
         {:fin_proxy} ->
+        IO.puts("EL OTRO PROXY HA TERMINADO")
           comprobacion_fallo(
             pid_client,
             pool,
@@ -256,6 +257,7 @@ defmodule Proxy do
   end
 
   def end_proxy(result, pid_client, pool, pid_w, pid_proxy, info) do
+    IO.puts("SOY PROXY Y HE TERMINADO ANTES")
     # POST PROTOCOL: indicamos al otro proxy acerca de nuestra finalización
     send(
       pid_proxy,
@@ -311,8 +313,8 @@ defmodule Pool do
         {:peti, pid, num} ->
           IO.puts("Ha llegado peticion")
           # Nos llega peticion y llamamos a función para saber qué worker devolverle.
-          dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid, num)
-
+          {disp_tr, disp_fib, disp_of, ocu, pend} = dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid, num)
+          {disp_tr, disp_fib, disp_of, ocu, pend}
         {:ok, pid, info} ->
           IO.puts("Nos ha llegado peticion de fin del worker #{inspect(pid)}")
           # Fin de worker -> anadimos a disponible
@@ -340,7 +342,9 @@ defmodule Pool do
           if pend != [] do
             [{pid_proxy, num} | resto] = pend
             pend = resto
-            dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid_proxy, num)
+            IO.puts("Hay pendientes, le enviamos worker")
+            {disp_tr, disp_fib, disp_of, ocu, pend} = dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid_proxy, num)
+            {disp_tr, disp_fib, disp_of, ocu, pend}
           else
             {disp_tr, disp_fib, disp_of, ocu, pend}
           end
@@ -400,7 +404,7 @@ defmodule Pool do
           # No hay ninguna lista disponible
           true ->
             pend = pend ++ [{pid, num}]
-            IO.puts("Estamos en el caso de no disponibles -> pend = ")
+            #IO.puts("Estamos en el caso de no disponibles -> pend = ")
             # IO.puts(inspect(pend))
             {disp_tr, disp_fib, disp_of, ocu, pend}
         end
