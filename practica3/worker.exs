@@ -74,7 +74,7 @@ defmodule Cliente do
     send(pid, {self, 1500})
 
     receive do
-      {:result, l} -> l
+      {:result, l} -> IO.inspect(l)
     end
   end
 

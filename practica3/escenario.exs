@@ -16,14 +16,12 @@ defmodule Servidor do
   defp server_p(dir_pool, proxy_machine) do
     pid_pool = {:pool, dir_pool}
     # Escuchamos peticiones del cliente
-    IO.puts("Pool: #{dir_pool}")
-
     {pid_cli, num} =
       receive do
         {pid_cli, num} -> {pid_cli, num}
       end
 
-    IO.puts("Nos ha llegado una peticion de un cliente")
+    # IO.puts("Nos ha llegado una peticion de un cliente")
     # Creamos el proxy1 para comunicarnos con el worker
     proxy1 =
       Node.spawn(
@@ -42,7 +40,7 @@ defmodule Servidor do
         [pid_cli, pid_pool, num, proxy1]
       )
 
-    IO.puts("Peticiones enviadas a los proxys")
+    # IO.puts("Peticiones enviadas a los proxys")
     server_p(dir_pool, proxy_machine)
   end
 end
@@ -118,7 +116,8 @@ defmodule Proxy do
     result =
       receive do
         {:fin_proxy} ->
-        IO.puts("EL OTRO PROXY HA TERMINADO")
+          IO.puts("EL OTRO PROXY HA TERMINADO client:#{inspect(pid_client)}, worker:#{inspect(pid_w)}")
+
           comprobacion_fallo(
             pid_client,
             pool,
@@ -177,7 +176,9 @@ defmodule Proxy do
       ) do
     {_, dir_w} = pid_w
 
+    IO.puts("Iniciamos comprobacion de fallo de tipo #{inspect(tipo)}")
     if Node.ping(dir_w) == :pong do
+      IO.puts("El nodo da ping")
       # El nodo pid_w esta vivo -> reintentar tarea N veces
       # Tipo = final, así que terminamos ejecución
       if tipo == :rutina do
@@ -269,6 +270,7 @@ defmodule Proxy do
     #   pid_client,
     #   {:fin, result, time, nEnvio}
     # )
+    IO.puts("ENVIO EL RESULTADO A #{inspect(pid_client)} y tengo a #{inspect(pid_w)}")
     send(
       pid_client,
       {:result, result}
@@ -297,6 +299,8 @@ defmodule Pool do
     lista_pendientes = []
     lista_fib = []
     lista_of = []
+
+    # Al inicio, lista_workers = lista_tr ya que en la primera tarea todos se comportan como un nodo normal (fibonacci_tr)
     pool(lista_workers, lista_fib, lista_of, lista_ocupados, lista_pendientes)
   end
 
@@ -313,8 +317,10 @@ defmodule Pool do
         {:peti, pid, num} ->
           IO.puts("Ha llegado peticion")
           # Nos llega peticion y llamamos a función para saber qué worker devolverle.
-          {disp_tr, disp_fib, disp_of, ocu, pend} = dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid, num)
-          {disp_tr, disp_fib, disp_of, ocu, pend}
+          # {disp_tr, disp_fib, disp_of, ocu, pend} = dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid, num)
+          # {disp_tr, disp_fib, disp_of, ocu, pend}
+          dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid, num)
+
         {:ok, pid, info} ->
           IO.puts("Nos ha llegado peticion de fin del worker #{inspect(pid)}")
           # Fin de worker -> anadimos a disponible
@@ -324,15 +330,15 @@ defmodule Pool do
           {disp_tr, disp_fib, disp_of} =
             cond do
               info == :fib_tr ->
-                disp_tr ++ [pid]
+                disp_tr = disp_tr ++ [pid]
                 {disp_tr, disp_fib, disp_of}
 
               info == :fib_fib ->
-                disp_fib ++ [pid]
+                disp_fib = disp_fib ++ [pid]
                 {disp_tr, disp_fib, disp_of}
 
               info == :fib_of ->
-                disp_of ++ [pid]
+                disp_of = disp_of ++ [pid]
                 {disp_tr, disp_fib, disp_of}
 
               true ->
@@ -343,8 +349,10 @@ defmodule Pool do
             [{pid_proxy, num} | resto] = pend
             pend = resto
             IO.puts("Hay pendientes, le enviamos worker")
-            {disp_tr, disp_fib, disp_of, ocu, pend} = dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid_proxy, num)
-            {disp_tr, disp_fib, disp_of, ocu, pend}
+
+            # {disp_tr, disp_fib, disp_of, ocu, pend} = dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid_proxy, num)
+            # {disp_tr, disp_fib, disp_of, ocu, pend}
+            dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid_proxy, num)
           else
             {disp_tr, disp_fib, disp_of, ocu, pend}
           end
@@ -353,8 +361,12 @@ defmodule Pool do
           IO.inspect("Ha caido un worker.")
           # El worker ha caido -> Lo eliminamos de la lista y le proporcionamos otro
           ocu = ocu -- [pid_w]
+          {disp_tr, disp_fib, disp_of, ocu, pend}
       end
 
+    IO.puts("Lista tr = #{inspect(disp_tr)}")
+    IO.puts("Lista fib = #{inspect(disp_fib)}")
+    IO.puts("Lista of = #{inspect(disp_of)}")
     pool(disp_tr, disp_fib, disp_of, ocu, pend)
   end
 
@@ -404,7 +416,7 @@ defmodule Pool do
           # No hay ninguna lista disponible
           true ->
             pend = pend ++ [{pid, num}]
-            #IO.puts("Estamos en el caso de no disponibles -> pend = ")
+            # IO.puts("Estamos en el caso de no disponibles -> pend = ")
             # IO.puts(inspect(pend))
             {disp_tr, disp_fib, disp_of, ocu, pend}
         end
