@@ -41,7 +41,7 @@ defmodule Servidor do
       )
 
     # IO.puts("Peticiones enviadas a los proxys")
-    server_p(dir_pool, proxy_machine, numPareja+1)
+    server_p(dir_pool, proxy_machine, numPareja + 1)
   end
 end
 
@@ -116,7 +116,13 @@ defmodule Proxy do
       receive do
         {:fin_proxy} ->
           IO.puts("EL OTRO PROXY HA TERMINADO. numPareja: #{numPareja} worker:#{inspect(pid_w)}")
+          # No hemos terminado -> Le damos acceso
+          send(
+            pid_proxy,
+            {:ok_fin}
+          )
 
+          # Comprobamos fallos
           comprobacion_fallo(
             pid_client,
             pool,
@@ -173,12 +179,13 @@ defmodule Proxy do
         pid_w,
         reintento,
         pid_proxy,
-        tipo, 
+        tipo,
         numPareja
       ) do
     {_, dir_w} = pid_w
 
     IO.puts("Iniciamos comprobacion de fallo de tipo #{inspect(tipo)}")
+
     if Node.ping(dir_w) == :pong do
       IO.puts("El nodo da ping")
       # El nodo pid_w esta vivo -> reintentar tarea N veces
@@ -261,12 +268,33 @@ defmodule Proxy do
   end
 
   def end_proxy(result, pid_client, pool, pid_w, pid_proxy, info, numPareja) do
-    IO.puts("SOY PROXY DE LA PAREJA #{numPareja} Y HE TERMINADO ANTES")
     # POST PROTOCOL: indicamos al otro proxy acerca de nuestra finalización
     send(
       pid_proxy,
       {:fin_proxy}
     )
+
+    # Esperamos a recibir permiso
+    receive do
+      {:ok_fin} ->
+        IO.puts("SOY PROXY DE LA PAREJA #{numPareja} Y HE TERMINADO ANTES")
+        # Este es el caso de que uno termina antes que otro
+        nil
+
+      {:fin_proxy} ->
+        # Este es el caso de que ambos han terminado casi a la vez
+        if self() > pid_proxy do
+          # Tenemos prioridad
+          IO.puts("SOY PROXY DE LA PAREJA #{numPareja} Y TENGO PRIORIDAD")
+        else
+          # No tiene prioridad, pero sabemos que el nodo ha funcionado bien, porque tenemos resultado
+          # Devolvemos el worker al pool
+          send(
+            pool,
+            {:ok, pid_w, info}
+          )
+        end
+    end
 
     # Devolvemos el resultado al cliente
     # send(
@@ -274,6 +302,7 @@ defmodule Proxy do
     #   {:fin, result, time, nEnvio}
     # )
     IO.puts("ENVIO EL RESULTADO y tengo a #{inspect(pid_w)}")
+
     send(
       pid_client,
       {:result, result}
