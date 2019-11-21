@@ -153,18 +153,22 @@ defmodule Proxy do
 
           info =
             cond do
-              tTotal <= 300 * 1000 && num == 1500 ->
+              num <= 36 ->
+                cond do
+                  tTotal <= 80 * 1000 -> :fib_of
+                  tTotal <= 90 * 1000 -> :fib_tr
+                  true -> :fib_fib
+                end
+
+              num <= 100 ->
+                if tTotal <= 80 * 1000 do
+                  :fib_of
+                else
+                  :fib_tr
+                end
+
+              num == 1500 ->
                 :fib_tr
-
-              tTotal <= 150 * 1000 && num <= 100 ->
-                :fib_of
-
-              tTotal <= 650_000 && num <= 36 ->
-                :fib_fib
-
-              # Suponemos caso poco probable, pero se lo enviamos a fibonacci
-              true ->
-                :fib_fib
             end
 
           end_proxy(result, pid_client, pool, pid_w, pid_proxy, info, numPareja)
@@ -245,7 +249,7 @@ defmodule Proxy do
         end
       else
         # En este caso, el otro proxy ha terminado, comprobamos estado de nuestro Worker.
-
+        # En el caso de que nuestro worker haya fallado, el siguiente proxy comprobará su estado
         info =
           cond do
             num <= 36 ->
@@ -438,8 +442,6 @@ defmodule Pool do
               {:ok, head}
             )
 
-            # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
-            pend = pend -- Enum.filter(pend, fn {a,b} -> a == pid end)
             {disp_tr, disp_fib, disp_of, ocu, pend}
 
           disp_of != [] ->
@@ -453,8 +455,6 @@ defmodule Pool do
               {:ok, head}
             )
 
-            # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
-            pend = pend -- Enum.filter(pend, fn {a,b} -> a == pid end)
             {disp_tr, disp_fib, disp_of, ocu, pend}
 
           disp_tr != [] ->
@@ -468,8 +468,6 @@ defmodule Pool do
               {:ok, head}
             )
 
-            # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
-            pend = pend -- Enum.filter(pend, fn {a,b} -> a == pid end)
             {disp_tr, disp_fib, disp_of, ocu, pend}
 
           # No hay ninguna lista disponible
@@ -493,8 +491,6 @@ defmodule Pool do
               {:ok, head}
             )
 
-            # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
-            pend = pend -- Enum.filter(pend, fn {a,b} -> a == pid end)
             {disp_tr, disp_fib, disp_of, ocu, pend}
 
           disp_tr != [] ->
@@ -508,8 +504,6 @@ defmodule Pool do
               {:ok, head}
             )
 
-            # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
-            pend = pend -- Enum.filter(pend, fn {a,b} -> a == pid end)
             {disp_tr, disp_fib, disp_of, ocu, pend}
 
           # No hay ninguna lista disponible
@@ -533,8 +527,6 @@ defmodule Pool do
             {:ok, head}
           )
 
-          # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
-          pend = pend -- Enum.filter(pend, fn {a,b} -> a == pid end)
           {disp_tr, disp_fib, disp_of, ocu, pend}
         else
           pend = pend ++ [{pid, num}]
