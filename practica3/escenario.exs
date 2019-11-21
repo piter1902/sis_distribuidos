@@ -50,7 +50,10 @@ defmodule Proxy do
   @timeout 300
   # 3 reintentos permitidos por tarea
   @limite_tarea 3
+  # Retardo por red
+  @retardo
   def proxy(pid_client, pool, num, pid_proxy, numPareja) do
+    IO.puts("INICIO Pareja #{numPareja}")
     # PRE-PROTOCOL
     pid_proxy = pre_protocol(pid_proxy)
 
@@ -98,6 +101,8 @@ defmodule Proxy do
         {:ok, pid_w} -> pid_w
       end
 
+    IO.puts("Soy Pareja #{numPareja} worker:#{inspect(pid_w)}")
+
     # Iniciamos la operacion del proxy
     proxy_operation(pid_client, pool, num, pid_w, reintento, pid_proxy, numPareja)
   end
@@ -140,16 +145,22 @@ defmodule Proxy do
           # Comprobamos el tiempo de respuesta de la operación
           tTotal = Time.diff(Time.utc_now(), t1, :microsecond)
 
+          IO.puts(
+            "Tiempo total de resolucion Pareja: #{numPareja} worker:#{inspect(pid_w)}: #{
+              inspect(tTotal)
+            }"
+          )
+
           info =
             cond do
-              tTotal <= 650_000 && num <= 36 ->
-                :fib_fib
+              tTotal <= 300 * 1000 && num == 1500 ->
+                :fib_tr
 
-              tTotal <= 100 && num <= 100 ->
+              tTotal <= 150 * 1000 && num <= 100 ->
                 :fib_of
 
-              tTotal <= 250 && num == 1500 ->
-                :fib_tr
+              tTotal <= 650_000 && num <= 36 ->
+                :fib_fib
 
               # Suponemos caso poco probable, pero se lo enviamos a fibonacci
               true ->
@@ -184,14 +195,23 @@ defmodule Proxy do
       ) do
     {_, dir_w} = pid_w
 
-    IO.puts("Iniciamos comprobacion de fallo de tipo #{inspect(tipo)}. Pareja #{numPareja}")
+    IO.puts(
+      "Iniciamos comprobacion de fallo de tipo #{inspect(tipo)}. Pareja #{numPareja}. Worker #{
+        inspect(pid_w)
+      }"
+    )
+
     if Node.ping(dir_w) == :pong do
-      IO.puts("El nodo da ping")
+      IO.puts("El nodo da ping. Pareja #{numPareja}. Worker #{inspect(pid_w)}")
       # El nodo pid_w esta vivo -> reintentar tarea N veces
       # Tipo = final, así que terminamos ejecución
       if tipo == :rutina do
         # Caso de mucho tiempo ejecución o ha lanzado excepción
         if reintento == @limite_tarea do
+          IO.puts(
+            "REINTENTO MAXIMO. Pareja #{numPareja}. Worker #{inspect(pid_w)}. COMUNICO CAIDA Y PIDO OTRO WORKER."
+          )
+
           # Hemos llegado al limite -> El nodo esta congestionado => Pedimos otro a pool y reintentamos
           # Le devolvemos el worker a pool
           send(
@@ -245,6 +265,7 @@ defmodule Proxy do
         )
       end
     else
+      IO.puts("El nodo no da ping. Pareja #{numPareja}. Worker #{inspect(pid_w)}. COMUNICO CAIDA")
       # El nodo ha caido (no ha devuelto :pong) -> :pang
       # Comunicamos al pool la caida y reintentamos la tarea
       send(
@@ -278,34 +299,33 @@ defmodule Proxy do
       {:ok_fin} ->
         IO.puts("SOY PROXY DE LA PAREJA #{numPareja} Y HE TERMINADO ANTES")
         # Este es el caso de que uno termina antes que otro
-        nil
+        IO.puts("ENVIO EL RESULTADO y tengo a #{inspect(pid_w)}. Pareja #{numPareja}")
+
+        send(
+          pid_client,
+          {:result, result}
+        )
 
       {:fin_proxy} ->
         # Este es el caso de que ambos han terminado casi a la vez
         if self() > pid_proxy do
           # Tenemos prioridad
           IO.puts("SOY PROXY DE LA PAREJA #{numPareja} Y TENGO PRIORIDAD")
-        else
-          # No tiene prioridad, pero sabemos que el nodo ha funcionado bien, porque tenemos resultado
-          # Devolvemos el worker al pool
+          # Devolvemos el resultado al cliente
+          # send(
+          #   pid_client,
+          #   {:fin, result, time, nEnvio}
+          # )
+          IO.puts("ENVIO EL RESULTADO y tengo a #{inspect(pid_w)}. Pareja #{numPareja}")
+
           send(
-            pool,
-            {:ok, pid_w, info}
+            pid_client,
+            {:result, result}
           )
         end
     end
 
-    # Devolvemos el resultado al cliente
-    # send(
-    #   pid_client,
-    #   {:fin, result, time, nEnvio}
-    # )
-    IO.puts("ENVIO EL RESULTADO y tengo a #{inspect(pid_w)}. Pareja #{numPareja}")
-    send(
-      pid_client,
-      {:result, result}
-    )
-
+    # No tiene prioridad, pero sabemos que el nodo ha funcionado bien, porque tenemos resultado
     # Devolvemos el worker al pool
     send(
       pool,
@@ -352,7 +372,7 @@ defmodule Pool do
           dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid, num)
 
         {:ok, pid, info} ->
-          IO.puts("Nos ha llegado peticion de fin del worker #{inspect(pid)}")
+          IO.puts("Nos ha llegado fin del worker #{inspect(pid)}")
           # Fin de worker -> anadimos a disponible
           # Comprobamos si hay alguien esperando   
           ocu = ocu -- [pid]
@@ -375,6 +395,9 @@ defmodule Pool do
                 {disp_tr, disp_fib, disp_of}
             end
 
+          IO.puts("Worker #{inspect(pid)} con info #{inspect(info)}")
+          IO.puts("Lista de pendientes = #{inspect(pend)}")
+
           if pend != [] do
             [{pid_proxy, num} | resto] = pend
             pend = resto
@@ -394,9 +417,9 @@ defmodule Pool do
           {disp_tr, disp_fib, disp_of, ocu, pend}
       end
 
-    IO.puts("Lista tr = #{inspect(disp_tr)}")
-    IO.puts("Lista fib = #{inspect(disp_fib)}")
-    IO.puts("Lista of = #{inspect(disp_of)}")
+    # IO.puts("Lista tr = #{inspect(disp_tr)}")
+    # IO.puts("Lista fib = #{inspect(disp_fib)}")
+    # IO.puts("Lista of = #{inspect(disp_of)}")
     pool(disp_tr, disp_fib, disp_of, ocu, pend)
   end
 
@@ -503,7 +526,7 @@ defmodule Pool do
           {disp_tr, disp_fib, disp_of, ocu, pend}
         else
           pend = pend ++ [{pid, num}]
-          IO.puts("Estamos en el caso de no disponibles -> pend = ")
+          IO.puts("Estamos en el caso de no disponibles -> pend = #{inspect(pend)}")
           # IO.puts(inspect(pend))
           {disp_tr, disp_fib, disp_of, ocu, pend}
         end
