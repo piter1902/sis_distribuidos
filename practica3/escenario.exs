@@ -10,10 +10,10 @@ import Fib
 defmodule Servidor do
   def server(dir_pool, proxy_machine) do
     Process.register(self(), :master)
-    server_p(dir_pool, proxy_machine)
+    server_p(dir_pool, proxy_machine, 0)
   end
 
-  defp server_p(dir_pool, proxy_machine) do
+  defp server_p(dir_pool, proxy_machine, numPareja) do
     pid_pool = {:pool, dir_pool}
     # Escuchamos peticiones del cliente
     {pid_cli, num} =
@@ -28,7 +28,7 @@ defmodule Servidor do
         proxy_machine,
         Proxy,
         :proxy,
-        [pid_cli, pid_pool, num, :vacio]
+        [pid_cli, pid_pool, num, :vacio, numPareja]
       )
 
     # Creamos el proxy1 para comunicarnos con el worker
@@ -37,11 +37,11 @@ defmodule Servidor do
         proxy_machine,
         Proxy,
         :proxy,
-        [pid_cli, pid_pool, num, proxy1]
+        [pid_cli, pid_pool, num, proxy1, numPareja]
       )
 
     # IO.puts("Peticiones enviadas a los proxys")
-    server_p(dir_pool, proxy_machine)
+    server_p(dir_pool, proxy_machine, numPareja+1)
   end
 end
 
@@ -50,8 +50,7 @@ defmodule Proxy do
   @timeout 300
   # 3 reintentos permitidos por tarea
   @limite_tarea 3
-  def proxy(pid_client, pool, num, pid_proxy) do
-    IO.puts("Soy proxy y acabo de empezar")
+  def proxy(pid_client, pool, num, pid_proxy, numPareja) do
     # PRE-PROTOCOL
     pid_proxy = pre_protocol(pid_proxy)
 
@@ -62,7 +61,7 @@ defmodule Proxy do
     )
 
     # Esperamos a aceptar la peticion
-    proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy)
+    proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy, numPareja)
   end
 
   # Funcion mediante la cual los proxys se conectan entre ellos
@@ -92,7 +91,7 @@ defmodule Proxy do
     end
   end
 
-  def proxy_aceptar_peticion(pid_client, pool, num, reintento, pid_proxy) do
+  def proxy_aceptar_peticion(pid_client, pool, num, reintento, pid_proxy, numPareja) do
     # Recibimos el worker con el que trabajaremos
     pid_w =
       receive do
@@ -100,10 +99,10 @@ defmodule Proxy do
       end
 
     # Iniciamos la operacion del proxy
-    proxy_operation(pid_client, pool, num, pid_w, reintento, pid_proxy)
+    proxy_operation(pid_client, pool, num, pid_w, reintento, pid_proxy, numPareja)
   end
 
-  def proxy_operation(pid_client, pool, num, pid_w, reintento, pid_proxy) do
+  def proxy_operation(pid_client, pool, num, pid_w, reintento, pid_proxy, numPareja) do
     # Enviamos el mensaje al worker
     send(
       pid_w,
@@ -116,7 +115,7 @@ defmodule Proxy do
     result =
       receive do
         {:fin_proxy} ->
-          IO.puts("EL OTRO PROXY HA TERMINADO client:#{inspect(pid_client)}, worker:#{inspect(pid_w)}")
+          IO.puts("EL OTRO PROXY HA TERMINADO. numPareja: #{numPareja} worker:#{inspect(pid_w)}")
 
           comprobacion_fallo(
             pid_client,
@@ -125,7 +124,8 @@ defmodule Proxy do
             pid_w,
             reintento,
             pid_proxy,
-            :final
+            :final,
+            numPareja
           )
 
         result ->
@@ -150,7 +150,7 @@ defmodule Proxy do
                 :fib_fib
             end
 
-          end_proxy(result, pid_client, pool, pid_w, pid_proxy, info)
+          end_proxy(result, pid_client, pool, pid_w, pid_proxy, info, numPareja)
       after
         @timeout ->
           comprobacion_fallo(
@@ -160,7 +160,8 @@ defmodule Proxy do
             pid_w,
             reintento,
             pid_proxy,
-            :rutina
+            :rutina,
+            numPareja
           )
       end
   end
@@ -172,7 +173,8 @@ defmodule Proxy do
         pid_w,
         reintento,
         pid_proxy,
-        tipo
+        tipo, 
+        numPareja
       ) do
     {_, dir_w} = pid_w
 
@@ -203,7 +205,7 @@ defmodule Proxy do
           #   {:peti, self(), num}
           # )
 
-          proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy)
+          proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy, numPareja)
         else
           proxy_operation(
             pid_client,
@@ -211,7 +213,8 @@ defmodule Proxy do
             num,
             pid_w,
             reintento + 1,
-            pid_proxy
+            pid_proxy,
+            numPareja
           )
         end
       else
@@ -250,15 +253,15 @@ defmodule Proxy do
         )
 
         # Volvemos a esperar el envio del worker
-        proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy)
+        proxy_aceptar_peticion(pid_client, pool, num, 0, pid_proxy, numPareja)
       end
 
       # En caso tipo == final, finalizaría ejecución
     end
   end
 
-  def end_proxy(result, pid_client, pool, pid_w, pid_proxy, info) do
-    IO.puts("SOY PROXY Y HE TERMINADO ANTES")
+  def end_proxy(result, pid_client, pool, pid_w, pid_proxy, info, numPareja) do
+    IO.puts("SOY PROXY DE LA PAREJA #{numPareja} Y HE TERMINADO ANTES")
     # POST PROTOCOL: indicamos al otro proxy acerca de nuestra finalización
     send(
       pid_proxy,
@@ -270,7 +273,7 @@ defmodule Proxy do
     #   pid_client,
     #   {:fin, result, time, nEnvio}
     # )
-    IO.puts("ENVIO EL RESULTADO A #{inspect(pid_client)} y tengo a #{inspect(pid_w)}")
+    IO.puts("ENVIO EL RESULTADO y tengo a #{inspect(pid_w)}")
     send(
       pid_client,
       {:result, result}
