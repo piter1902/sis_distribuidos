@@ -41,6 +41,7 @@ defmodule Worker do
 
         cond do
           behavioural_probability >= 90 ->
+            IO.puts("MUERTO MATAO.")
             [&System.halt/1, false]
 
           behavioural_probability >= 70 ->
@@ -50,6 +51,7 @@ defmodule Worker do
             [&Fib.of/1, false]
 
           behavioural_probability >= 30 ->
+            IO.puts("Pérdida de envío.")
             [&Fib.fibonacci_tr/1, true]
 
           true ->
@@ -61,7 +63,10 @@ defmodule Worker do
 
     receive do
       {:req, {pid, args}} -> IO.puts("Nos ha llegado petición: con #{inspect(op)} el numero #{args}")
-                             if not omission, do: send(pid, op.(args))
+                             if not omission do
+                              send(pid, op.(args))
+                              IO.puts("Enviando a proxy...")
+                             end
                              IO.puts("Ejecuto con #{inspect(op)} el numero #{args}")
     end
 

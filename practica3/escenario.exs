@@ -438,6 +438,8 @@ defmodule Pool do
               {:ok, head}
             )
 
+            # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
+            pend = pend -- [pid]
             {disp_tr, disp_fib, disp_of, ocu, pend}
 
           disp_of != [] ->
@@ -451,6 +453,8 @@ defmodule Pool do
               {:ok, head}
             )
 
+            # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
+            pend = pend -- [pid]
             {disp_tr, disp_fib, disp_of, ocu, pend}
 
           disp_tr != [] ->
@@ -464,6 +468,8 @@ defmodule Pool do
               {:ok, head}
             )
 
+            # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
+            pend = pend -- [pid]
             {disp_tr, disp_fib, disp_of, ocu, pend}
 
           # No hay ninguna lista disponible
@@ -487,6 +493,8 @@ defmodule Pool do
               {:ok, head}
             )
 
+            # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
+            pend = pend -- [pid]
             {disp_tr, disp_fib, disp_of, ocu, pend}
 
           disp_tr != [] ->
@@ -500,6 +508,8 @@ defmodule Pool do
               {:ok, head}
             )
 
+            # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
+            pend = pend -- [pid]
             {disp_tr, disp_fib, disp_of, ocu, pend}
 
           # No hay ninguna lista disponible
@@ -523,6 +533,8 @@ defmodule Pool do
             {:ok, head}
           )
 
+          # Modificamos lista de pendientes, en caso de que exista ese pid en la misma.
+          pend = pend -- [pid]
           {disp_tr, disp_fib, disp_of, ocu, pend}
         else
           pend = pend ++ [{pid, num}]

@@ -53,4 +53,4 @@ case $3 in
 esac
 
 # Ejecutamos iex con el comando asociado
-echo $comando | iex --name $1'@'$2 --cookie $4 -r "worker.exs" "escenario.exs" #2>'/dev/null'
+echo $comando | iex --name $1'@'$2 --cookie $4 -r "worker.exs" "escenario.exs" 2>'/dev/null'
