@@ -178,7 +178,7 @@ defmodule Proxy do
       ) do
     {_, dir_w} = pid_w
 
-    IO.puts("Iniciamos comprobacion de fallo de tipo #{inspect(tipo)}")
+    IO.puts("Iniciamos comprobacion de fallo de tipo #{inspect(tipo)}. Pareja #{numPareja}")
     if Node.ping(dir_w) == :pong do
       IO.puts("El nodo da ping")
       # El nodo pid_w esta vivo -> reintentar tarea N veces
@@ -273,7 +273,7 @@ defmodule Proxy do
     #   pid_client,
     #   {:fin, result, time, nEnvio}
     # )
-    IO.puts("ENVIO EL RESULTADO y tengo a #{inspect(pid_w)}")
+    IO.puts("ENVIO EL RESULTADO y tengo a #{inspect(pid_w)}. Pareja #{numPareja}")
     send(
       pid_client,
       {:result, result}
