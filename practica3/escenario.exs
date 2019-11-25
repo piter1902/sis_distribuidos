@@ -145,13 +145,14 @@ defmodule Proxy do
           # No hay errores -> Devolvemos el resultado al cliente y terminamos
           # Comprobamos el tiempo de respuesta de la operación
           tTotal = Time.diff(Time.utc_now(), t1, :microsecond)
-          #Comprobamos si es entero. En caso negativo, lo convertimos a entero.
-          result=
-          unless is_integer(result) do
-            trunc(result)
-          else
-            result
-          end
+          # Comprobamos si es entero. En caso negativo, lo convertimos a entero.
+          result =
+            unless is_integer(result) do
+              trunc(result)
+            else
+              result
+            end
+
           IO.puts(
             "Tiempo total de resolucion Pareja: #{numPareja} worker:#{inspect(pid_w)}: #{
               inspect(tTotal)
