@@ -34,7 +34,7 @@ case $3 in
     ;;
 
     "cliente")
-        comando=$comando"Cliente.genera_workload({:master,:\"$8@$dir_master\"}, Map.new(),0)"
+        comando=$comando"Cliente.genera_workload({:master,:\"$8@$dir_master\"})"
         #echo 'echo '$comando'|iex --name '$1'@'$2' --cookie '$4' -r "worker.exs" "escenario.exs" 2>/dev/null'
         #exit 1
     ;;
@@ -53,4 +53,4 @@ case $3 in
 esac
 
 # Ejecutamos iex con el comando asociado
-echo $comando | iex --name $1'@'$2 --cookie $4 -r "worker.exs" "escenario.exs" #2>'/dev/null'
+echo $comando | iex --name $1'@'$2 --cookie $4 -r "worker.exs" "escenario.exs" 2>'/dev/null'

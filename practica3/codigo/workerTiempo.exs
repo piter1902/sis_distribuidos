@@ -41,6 +41,7 @@ defmodule Worker do
 
         cond do
           behavioural_probability >= 90 ->
+            IO.puts("MUERTO MATAO.")
             [&System.halt/1, false]
 
           behavioural_probability >= 70 ->
@@ -50,6 +51,7 @@ defmodule Worker do
             [&Fib.of/1, false]
 
           behavioural_probability >= 30 ->
+            IO.puts("Pérdida de envío.")
             [&Fib.fibonacci_tr/1, true]
 
           true ->
@@ -60,7 +62,15 @@ defmodule Worker do
       end
 
     receive do
-      {:req, {pid, args}} -> if not omission, do: send(pid, op.(args))
+      {:req, {pid, args}} ->
+        IO.puts("Nos ha llegado petición: con #{inspect(op)} el numero #{args}")
+
+        if not omission do
+          send(pid, op.(args))
+          IO.puts("Enviando a proxy...")
+        end
+
+        IO.puts("Ejecuto con #{inspect(op)} el numero #{args}")
     end
 
     worker(new_op, rem(service_count + 1, k), k)
@@ -68,24 +78,35 @@ defmodule Worker do
 end
 
 defmodule Cliente do
-  defp launch(pid, 1) do
-    send(pid, {self, 1500})
+  defp launch(pid, 1, mapa, nEnvio) do
+    mapa = Map.put(mapa, nEnvio, Time.utc_now())
+    send(pid, {self, 1500, nEnvio})
 
     receive do
-      {:result, l} -> l
-        IO.puts("Nos ha llegado: #{l}")
+      {:result, l, nPaquete} ->
+        t1 = Map.get(mapa, nPaquete)
+        tFinal = Time.diff(Time.utc_now(), t1, :microsecond)
+
+        IO.puts(
+          "Envio #{nPaquete} ha tardado #{inspect(tFinal)} microseconds y su valor es #{
+            inspect(l)
+          }"
+        )
     end
+
+    mapa
   end
 
-  defp launch(pid, n) when n != 1 do
+  defp launch(pid, n, mapa, nEnvio) when n != 1 do
     number = if rem(n, 3) == 0, do: 100, else: 36
-    send(pid, {self, :random.uniform(number)})
-    launch(pid, n - 1)
+    mapa = Map.put(mapa, nEnvio, Time.utc_now())
+    send(pid, {self, :random.uniform(number), nEnvio})
+    launch(pid, n - 1, mapa, nEnvio + 1)
   end
 
-  def genera_workload(server_pid) do
-    launch(server_pid, 6 + :random.uniform(2))
+  def genera_workload(server_pid, mapa, nEnvio) do
+    mapa = launch(server_pid, 6 + :random.uniform(2), mapa, nEnvio)
     Process.sleep(2000 + :random.uniform(200))
-    genera_workload(server_pid)
+    genera_workload(server_pid, mapa, nEnvio + 8)
   end
 end

@@ -2,7 +2,7 @@
 # NIAs: 758267 y 755742
 # FICHERO: escenario.exs
 # FECHA: fecha de realizacion
-# TIEMPO: tiempo en horas de codificación
+# TIEMPO: 10
 # DESCRIPCION: breve descripcion del contenido del fichero
 
 import Fib
@@ -21,7 +21,6 @@ defmodule Servidor do
         {pid_cli, num} -> {pid_cli, num}
       end
 
-    # IO.puts("Nos ha llegado una peticion de un cliente")
     # Creamos el proxy1 para comunicarnos con el worker
     proxy1 =
       Node.spawn(
@@ -40,7 +39,6 @@ defmodule Servidor do
         [pid_cli, pid_pool, num, proxy1, numPareja]
       )
 
-    # IO.puts("Peticiones enviadas a los proxys")
     server_p(dir_pool, proxy_machine, numPareja + 1)
   end
 end
@@ -53,7 +51,6 @@ defmodule Proxy do
   # Retardo por red
   @retardo
   def proxy(pid_client, pool, num, pid_proxy, numPareja) do
-    IO.puts("INICIO Pareja #{numPareja}")
     # PRE-PROTOCOL
     pid_proxy = pre_protocol(pid_proxy)
 
@@ -101,8 +98,6 @@ defmodule Proxy do
         {:ok, pid_w} -> pid_w
       end
 
-    IO.puts("Soy Pareja #{numPareja} worker:#{inspect(pid_w)}")
-
     # Iniciamos la operacion del proxy
     proxy_operation(pid_client, pool, num, pid_w, reintento, pid_proxy, numPareja)
   end
@@ -144,16 +139,13 @@ defmodule Proxy do
           # No hay errores -> Devolvemos el resultado al cliente y terminamos
           # Comprobamos el tiempo de respuesta de la operación
           tTotal = Time.diff(Time.utc_now(), t1, :microsecond)
-          #Comprobamos si es entero. En caso negativo, lo convertimos a entero.
-          result=
-          unless is_integer(result) do
-            trunc(result)
-          end
-          IO.puts(
-            "Tiempo total de resolucion Pareja: #{numPareja} worker:#{inspect(pid_w)}: #{
-              inspect(tTotal)
-            }"
-          )
+          # Comprobamos si es entero. En caso negativo, lo convertimos a entero.
+          result =
+            unless is_integer(result) do
+              trunc(result)
+            else
+              result
+            end
 
           info =
             cond do
@@ -320,11 +312,6 @@ defmodule Proxy do
           # Tenemos prioridad
           IO.puts("SOY PROXY DE LA PAREJA #{numPareja} Y TENGO PRIORIDAD")
           # Devolvemos el resultado al cliente
-          # send(
-          #   pid_client,
-          #   {:fin, result, time, nEnvio}
-          # )
-          IO.puts("ENVIO EL RESULTADO y tengo a #{inspect(pid_w)}. Pareja #{numPareja}")
 
           send(
             pid_client,
@@ -345,13 +332,6 @@ end
 defmodule Pool do
   def pool(lista_workers) do
     Process.register(self(), :pool)
-
-    # lista_disponibles = [
-    #   :"w1@155.210.154.198",
-    #   :"w1@155.210.154.198",
-    #   :"w1@155.210.154.198",
-    #   :"w1@155.210.154.198"
-    # ]
 
     lista_ocupados = []
     lista_pendientes = []
@@ -403,16 +383,11 @@ defmodule Pool do
                 {disp_tr, disp_fib, disp_of}
             end
 
-          IO.puts("Worker #{inspect(pid)} con info #{inspect(info)}")
-          IO.puts("Lista de pendientes = #{inspect(pend)}")
-
           if pend != [] do
             [{pid_proxy, num} | resto] = pend
             pend = resto
             IO.puts("Hay pendientes, le enviamos worker")
 
-            # {disp_tr, disp_fib, disp_of, ocu, pend} = dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid_proxy, num)
-            # {disp_tr, disp_fib, disp_of, ocu, pend}
             dar_worker(disp_tr, disp_fib, disp_of, ocu, pend, pid_proxy, num)
           else
             {disp_tr, disp_fib, disp_of, ocu, pend}
@@ -425,9 +400,6 @@ defmodule Pool do
           {disp_tr, disp_fib, disp_of, ocu, pend}
       end
 
-    # IO.puts("Lista tr = #{inspect(disp_tr)}")
-    # IO.puts("Lista fib = #{inspect(disp_fib)}")
-    # IO.puts("Lista of = #{inspect(disp_of)}")
     pool(disp_tr, disp_fib, disp_of, ocu, pend)
   end
 
@@ -477,8 +449,6 @@ defmodule Pool do
           # No hay ninguna lista disponible
           true ->
             pend = pend ++ [{pid, num}]
-            # IO.puts("Estamos en el caso de no disponibles -> pend = ")
-            # IO.puts(inspect(pend))
             {disp_tr, disp_fib, disp_of, ocu, pend}
         end
 
@@ -513,7 +483,6 @@ defmodule Pool do
           # No hay ninguna lista disponible
           true ->
             pend = pend ++ [{pid, num}]
-            IO.puts("Estamos en el caso de no disponibles -> pend = ")
             # IO.puts(inspect(pend))
             {disp_tr, disp_fib, disp_of, ocu, pend}
         end
@@ -534,8 +503,6 @@ defmodule Pool do
           {disp_tr, disp_fib, disp_of, ocu, pend}
         else
           pend = pend ++ [{pid, num}]
-          IO.puts("Estamos en el caso de no disponibles -> pend = #{inspect(pend)}")
-          # IO.puts(inspect(pend))
           {disp_tr, disp_fib, disp_of, ocu, pend}
         end
     end
