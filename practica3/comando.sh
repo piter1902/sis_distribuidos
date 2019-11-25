@@ -18,9 +18,9 @@ if [ $# -ne 8 ]; then
     exit 1
 fi
 
-dir_master="10.1.50.29"
-dir_pool="10.1.50.29"
-dir_proxy="10.1.50.29"
+dir_master="127.0.0.1"
+dir_pool="127.0.0.1"
+dir_proxy="127.0.0.1"
 
 # Comando a ejecutar para la inicialización de iex
 comando="Node.connect(:\"master@$dir_master\");IO.inspect(Node.list());"
@@ -34,14 +34,14 @@ case $3 in
     ;;
 
     "cliente")
-        comando=$comando"Cliente.genera_workload({:master,:\"$8@$dir_master\"})"
+        comando=$comando"Cliente.init({:master,:\"$8@$dir_master\"})"
         #echo 'echo '$comando'|iex --name '$1'@'$2' --cookie '$4' -r "worker.exs" "escenario.exs" 2>/dev/null'
         #exit 1
     ;;
 
     "proxy")
         #echo $comando'receive do end' | iex --name $1'@'$2 --cookie $4 -r "worker.exs" "escenario.exs" 2>'/dev/null'
-        iex --name $1'@'$2 --cookie $4 -r "worker.exs" "escenario.exs" 2>'/dev/null'
+       iex --name $1'@'$2 --cookie $4 -r "worker.exs" "escenario.exs" 2>'/dev/null'
         exit 1
     ;;
 
