@@ -9,7 +9,7 @@ defmodule ServidorGV do
   # Tipo estructura de datos que guarda el estado del servidor de vistas
   # COMPLETAR  con lo campos necesarios para gestionar
   # el estado del gestor de vistas
-  defstruct primario: :undefined, copia: :undefined, numVista: 0
+  defstruct primario: :undefined, copia: :undefined, num_vista: 0
 
   # Constantes
   @latidos_fallidos 4
@@ -89,23 +89,87 @@ defmodule ServidorGV do
     {vista_tentativa, latidos_fallidos, nodos_espera} =
       receive do
         {:latido, n_vista_latido, nodo_emisor} ->
-          nil
+          cond do
+            n_vista_latido == 0 ->
+              # Latido es 0 -> Recaida
+              cond do
+                ServidorGV.primario() == :undefined ->
+                  vista_tentiva = %{vista_tentativa | primario: nodo_emisor}
+
+                ServidorGV.copia() == :undefined ->
+                  vista_tentiva = %{vista_tentativa | copia: nodo_emisor}
+
+                true ->
+                  nodos_espera = nodos_espera ++ [nodo_emisor]
+              end
+
+              # Aun no ha fallado ningun latido
+              latidos_fallidos = latidos_fallidos ++ [{nodo_emisor, 0}]
+
+            # Latido != 0
+            n_vista_latido == -1 ->
+              # nodo_emisor es primario pero no confirma la vista
+              nil
+
+            n_vista_latido > 0 ->
+              # validar la vista -> si es el maestro y numero de vista == vista tentativa
+              if nodo_emisor == vista_tentativa.primario do
+                if n_vista_latido == vista_tentativa.num_vista do
+                  # Las vistas coinciden -> Se valida la vista tentativa
+                  ServidorGV = vista_tentativa
+                end
+              end
+
+              # Resetamos los latidos fallidos de la lista a 0 para el nodo nodo_emisor
+              latidos_fallidos =
+                Enum.map(latidos_fallidos, fn {a, b} ->
+                  if a == nodo_emisor do
+                    {a, 0}
+                  else
+                    {a, b}
+                  end
+                end)
+
+              # Le devolvemos la vista tentativa
+              send(
+                nodo_emisor,
+                obtener_vista(vista_tentativa)
+              )
+          end
 
         ### VUESTRO CODIGO
 
         {:obten_vista_valida, pid} ->
-          nil
-
-        ### VUESTRO CODIGO
+          send(
+            pid,
+            obtener_vista(ServidorGV)
+          )
 
         :procesa_situacion_servidores ->
-          nil
+          # Todos los elementos de latidos_fallidos + 1 latido fallido
+          latidos_fallidos = Enum.map(latidos_fallidos, fn {a, b} -> {a, b + 1} end)
+          # Guardamos los estados del primario y de la copia
+          estado_primario =
+            Enum.filter(latidos_fallidos, fn {a, b} ->
+              if a == vista_tentativa.primario and b >= @latidos_fallidos do
+              end
+            end)
 
-          ### VUESTRO CODIGO
+          estado_copia =
+            Enum.filter(latidos_fallidos, fn {a, b} ->
+              if a == vista_tentativa.copia and b >= @latidos_fallidos do
+              end
+            end)
+
+          # Filtramos aquellos nodos que hayan expirado el numero de latidos
+          latidos_fallidos = Enum.filter()
       end
 
     bucle_recepcion(vista_tentativa, latidos_fallidos, nodos_espera)
   end
 
   # OTRAS FUNCIONES PRIVADAS VUESTRAS
+  defp obtener_vista(vista) do
+    {vista.num_vista(), vista.primario(), vista.copia()}
+  end
 end
