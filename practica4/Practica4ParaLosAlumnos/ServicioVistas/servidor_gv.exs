@@ -149,14 +149,14 @@ defmodule ServidorGV do
           # Todos los elementos de latidos_fallidos + 1 latido fallido
           latidos_fallidos = Enum.map(latidos_fallidos, fn {a, b} -> {a, b + 1} end)
           # Guardamos los estados del primario y de la copia
+          # Si no se cumple la guarda propuesta, devuelve el átomo especificado en el segundo campo de la función
           estado_primario =
-            Enum.filter(latidos_fallidos, fn {a, b} ->
-              if a == vista_tentativa.primario and b >= @latidos_fallidos do
-              end
+            Enum.find_value(latidos_fallidos, :primario_ok , fn {a, b} ->
+              a == vista_tentativa.primario and b >= @latidos_fallidos
             end)
 
           estado_copia =
-            Enum.filter(latidos_fallidos, fn {a, b} ->
+            Enum.find_value(latidos_fallidos, :copia_ok, fn {a, b} ->
               if a == vista_tentativa.copia and b >= @latidos_fallidos do
               end
             end)
