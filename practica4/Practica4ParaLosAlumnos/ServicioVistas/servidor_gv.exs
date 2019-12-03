@@ -89,61 +89,73 @@ defmodule ServidorGV do
     {vista_tentativa, latidos_fallidos, nodos_espera} =
       receive do
         {:latido, n_vista_latido, nodo_emisor} ->
-          cond do
-            n_vista_latido == 0 ->
-              # Latido es 0 -> Recaida
-              cond do
-                ServidorGV.primario() == :undefined ->
-                  vista_tentiva = %{vista_tentativa | primario: nodo_emisor}
+          {vista_tentativa, latidos_fallidos, nodos_espera} =
+            cond do
+              n_vista_latido == 0 ->
+                # Latido es 0 -> Recaida
+                {vista_tentativa, nodos_espera} =
+                  cond do
+                    ServidorGV.primario() == :undefined ->
+                      vista_tentiva = %{vista_tentativa | primario: nodo_emisor}
+                      {vista_tentativa, nodos_espera}
 
-                ServidorGV.copia() == :undefined ->
-                  vista_tentiva = %{vista_tentativa | copia: nodo_emisor}
+                    ServidorGV.copia() == :undefined ->
+                      vista_tentiva = %{vista_tentativa | copia: nodo_emisor}
+                      {vista_tentativa, nodos_espera}
 
-                true ->
-                  nodos_espera = nodos_espera ++ [nodo_emisor]
-              end
-
-              # Aun no ha fallado ningun latido
-              latidos_fallidos = latidos_fallidos ++ [{nodo_emisor, 0}]
-
-            # Latido != 0
-            n_vista_latido == -1 ->
-              # nodo_emisor es primario pero no confirma la vista
-              nil
-
-            n_vista_latido > 0 ->
-              # validar la vista -> si es el maestro y numero de vista == vista tentativa
-              if nodo_emisor == vista_tentativa.primario do
-                if n_vista_latido == vista_tentativa.num_vista do
-                  # Las vistas coinciden -> Se valida la vista tentativa
-                  ServidorGV = vista_tentativa
-                end
-              end
-
-              # Resetamos los latidos fallidos de la lista a 0 para el nodo nodo_emisor
-              latidos_fallidos =
-                Enum.map(latidos_fallidos, fn {a, b} ->
-                  if a == nodo_emisor do
-                    {a, 0}
-                  else
-                    {a, b}
+                    true ->
+                      nodos_espera = nodos_espera ++ [nodo_emisor]
+                      {vista_tentativa, nodos_espera}
                   end
-                end)
 
-              # Le devolvemos la vista tentativa
-              send(
-                nodo_emisor,
-                obtener_vista(vista_tentativa)
-              )
-          end
+                # Aun no ha fallado ningun latido
+                latidos_fallidos = latidos_fallidos ++ [{nodo_emisor, 0}]
+                {vista_tentativa, latidos_fallidos, nodos_espera}
 
-        ### VUESTRO CODIGO
+              # Latido != 0
+              n_vista_latido == -1 ->
+                # nodo_emisor es primario pero no confirma la vista
+                send(
+                  pid,
+                  obtener_vista(vista_tentativa)
+                )
+                {vista_tentativa, latidos_fallidos, nodos_espera}
+
+              n_vista_latido > 0 ->
+                # Funcionamiento normal
+                # validar la vista -> si es el primario y numero de vista == vista tentativa
+                if nodo_emisor == vista_tentativa.primario do
+                  if n_vista_latido == vista_tentativa.num_vista do
+                    # Las vistas coinciden -> Se valida la vista tentativa
+                    ServidorGV = vista_tentativa
+                  end
+                end
+
+                # Resetamos los latidos fallidos de la lista a 0 para el nodo nodo_emisor
+                latidos_fallidos =
+                  Enum.map(latidos_fallidos, fn {a, b} ->
+                    if a == nodo_emisor do
+                      {a, 0}
+                    else
+                      {a, b}
+                    end
+                  end)
+
+                # Le devolvemos la vista tentativa
+                send(
+                  nodo_emisor,
+                  obtener_vista(vista_tentativa)
+                )
+
+                {vista_tentativa, latidos_fallidos, nodos_espera}
+            end
 
         {:obten_vista_valida, pid} ->
           send(
             pid,
             obtener_vista(ServidorGV)
           )
+          {vista_tentativa, latidos_fallidos, nodos_espera}
 
         :procesa_situacion_servidores ->
           # Todos los elementos de latidos_fallidos + 1 latido fallido
@@ -151,7 +163,7 @@ defmodule ServidorGV do
           # Guardamos los estados del primario y de la copia
           # Si no se cumple la guarda propuesta, devuelve el átomo especificado en el segundo campo de la función
           estado_primario =
-            Enum.find_value(latidos_fallidos, :primario_ok , fn {a, b} ->
+            Enum.find_value(latidos_fallidos, :primario_ok, fn {a, b} ->
               a == vista_tentativa.primario and b >= @latidos_fallidos
             end)
 
@@ -161,8 +173,58 @@ defmodule ServidorGV do
               end
             end)
 
+          # Comprobamos el estado del primario y la copia
+
+          {vista_tentativa, nodos_espera} =
+            cond do
+              estado_primario != :primario_ok and estado_copia != :copia_ok ->
+                # Ambos han caido -> fallo de consistencia
+                {vista_tentativa, nodos_espera}
+
+              estado_primario != :primario_ok ->
+                # Primario ha caido y copia no -> Promocionamos copia y nodo en espera -> copia
+                vista_tentiva = %{vista_tentativa | primario: ServidorGV.copia()}
+                # Buscamos el nuevo nodo copia
+                {vista_tentativa, nodos_espera} =
+                  if lenght(nodos_espera) > 0 do
+                    # Hay nodos en espera
+                    [copia_nueva | resto] = nodos_espera
+                    nodos_espera = resto
+                    # Lo establecemos como copia
+                    vista_tentiva = %{vista_tentativa | copia: copia_nueva}
+                    {vista_tentativa, nodos_espera}
+                  end
+
+                {vista_tentativa, nodos_espera}
+
+              estado_copia != :copia_ok ->
+                {vista_tentativa, nodos_espera}
+
+              true ->
+                {vista_tentativa, nodos_espera}
+            end
+
           # Filtramos aquellos nodos que hayan expirado el numero de latidos
-          latidos_fallidos = Enum.filter()
+          latidos_fallidos =
+            Enum.filter(latidos_fallidos, fn {a, b} ->
+              if b < @latidos_fallidos do
+                {a, b}
+              end
+            end)
+
+          # Obtenemos una lista de nodos
+          nodos_latidos = Enum.map(latidos_fallidos, fn {a, b} -> a end)
+
+          # Filtramos aquellos nodos de la lista que existan aun en latidos
+          nodos_espera =
+            Enum.filter(nodos_espera, fn x ->
+              if Enum.member?(nodos_latidos, x) do
+                x
+              end
+            end)
+
+          # Devolvemos los valores actualizados
+          {vista_tentativa, latidos_fallidos, nodos_espera}
       end
 
     bucle_recepcion(vista_tentativa, latidos_fallidos, nodos_espera)
