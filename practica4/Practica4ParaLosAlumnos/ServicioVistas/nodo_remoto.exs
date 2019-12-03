@@ -35,7 +35,7 @@ defmodule NodoRemoto do
     # estilo kill -9, ahora nos va
     :rpc.call(nodo, :erlang, :halt, [])
 
-    # tambien habría que eliminar epmd, 
+    # tambien habría que eliminar epmd,
     # en el script shell externo
   end
 

@@ -25,7 +25,6 @@ defmodule ClienteGV do
   @spec startService(node, node) :: boolean
   def startService(nodoElixir, nodo_servidor_gv) do
     NodoRemoto.esperaNodoOperativo(nodoElixir, __MODULE__)
-
     # Poner en marcha la funcionalidad del cliente de gestor de vistas
     Node.spawn(nodoElixir, __MODULE__, :init_cl, [nodo_servidor_gv])
     nodoElixir

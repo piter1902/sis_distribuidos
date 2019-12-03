@@ -18,8 +18,8 @@ defmodule GestorVistasTest do
   # Para gestionar nodos y maquinas
   setup_all do
     # Poner en marcha los servidores, obtener nodos
-    # maquinas = ["localhost.localhost", "155.210.154.206", 
-    #            "155.210.154.207", "155.210.154.208"] 
+    # maquinas = ["localhost.localhost", "155.210.154.206",
+    #            "155.210.154.207", "155.210.154.208"]
     maquinas = ["localhost.localhost"]
     # devuelve una mapa de nodos del servidor y clientes
     nodos = startServidores(maquinas)
@@ -81,7 +81,7 @@ defmodule GestorVistasTest do
     {vista, _} = ClienteGV.latido(c2, 2)
 
     copia_releva_primario(c2,vista.num_vista, ServidorGV.latidos_fallidos() * 2)
-    
+
     comprobar_tentativa(c2, c2, :undefined, vista.num_vista + 1)
 
     IO.puts(" ... Superado")
@@ -136,11 +136,11 @@ defmodule GestorVistasTest do
     # vista tentativa
     {vista, _} = ClienteGV.latido(c1, 5)
     primario_rearrancado(c1, c3, 5, ServidorGV.latidos_fallidos() * 2)
-    
+
     comprobar_tentativa(c3, c3, c1, vista.num_vista)
   end
 
-  
+
   ## Test 8 : Servidor de vistas espera a que primario confirme vista
   ##          pero este no lo hace.
   ##          Poner C3 como Primario, C1 como Copia, C2 para comprobar
@@ -149,12 +149,12 @@ defmodule GestorVistasTest do
   # primario_no_confirma_vista(C1, C2, C3),
   # @tag :deshabilitado
 
-  
+
   ## Test 9 : Si anteriores servidores caen (Primario  y Copia),
   ##       un nuevo servidor sin inicializar no puede convertirse en primario.
   # sin_inicializar_no(C1, C2, C3),
 
-  
+
   # ------------------ FUNCIONES DE APOYO A TESTS ------------------------
 
   ##
@@ -200,7 +200,7 @@ defmodule GestorVistasTest do
     IO.puts("Finalmente eliminamos nodos")
     Enum.each(servidores, fn {_, nodo} -> NodoRemoto.stop(nodo) end)
 
-    # Eliminar epmd en cada maquina con nodos Elixir                            
+    # Eliminar epmd en cada maquina con nodos Elixir
     Enum.each(maquinas, fn m -> NodoRemoto.killEpmd(m) end)
   end
 
@@ -280,7 +280,7 @@ defmodule GestorVistasTest do
       primario_rearrancado(c1, c3, num_vista_tentativa, x - 1)
     end
   end
-  
+
   defp comprobar_tentativa(nodo_cliente, nodo_primario, nodo_copia, n_vista) do
     # Solo interesa vista tentativa
     {vista, _} = ClienteGV.latido(nodo_cliente, -1)

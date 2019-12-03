@@ -18,9 +18,9 @@ if [ $# -ne 8 ]; then
     exit 1
 fi
 
-dir_master="127.0.0.1"
-dir_pool="127.0.0.1"
-dir_proxy="127.0.0.1"
+dir_master="10.1.49.226"
+dir_pool="10.1.49.226"
+dir_proxy="10.1.49.226"
 
 # Comando a ejecutar para la inicialización de iex
 comando="Node.connect(:\"master@$dir_master\");IO.inspect(Node.list());"
