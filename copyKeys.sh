@@ -14,7 +14,7 @@ rm "IPs.txt" &> /dev/null
 while [ $ip -le $lastIp ]
 do
 	echo "Probando IP $addr.$ip"
-	ping -c 1 -t 2 "$addr.$ip" &> /dev/null    				#comprueba que la maquina correspondiente a la ip esta disponible
+	ping -c 1 "$addr.$ip" &> /dev/null    				#comprueba que la maquina correspondiente a la ip esta disponible
 	if [[ $? -eq 0 ]]
 	then
 		echo "Disponible"
@@ -32,7 +32,7 @@ echo
 cat "IPs.txt" | while read ip
 do
 	echo "Copiando a $ip"
-	ssh-copy-id -i ~/.ssh/sist_dis.pub a766685@$ip 			#Cambiar nombre de clave por nombre de clave propia
+	ssh-copy-id -i ~/.ssh/sis_dis_pr5.pub a755742@$ip 			#Cambiar nombre de clave por nombre de clave propia
 done
 
 echo

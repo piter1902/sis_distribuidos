@@ -232,6 +232,6 @@ defmodule ServidorGV do
 
   # OTRAS FUNCIONES PRIVADAS VUESTRAS
   defp obtener_vista(vista) do
-    {vista.num_vista(), vista.primario(), vista.copia()}
+    {vista.num_vista, vista.primario, vista.copia}
   end
 end

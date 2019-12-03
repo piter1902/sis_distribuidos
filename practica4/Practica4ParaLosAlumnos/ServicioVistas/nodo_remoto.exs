@@ -15,7 +15,7 @@ defmodule NodoRemoto do
   def start(nombre, host, fichero_programa_cargar) do
     System.cmd("ssh", [
       host,
-      "elixir --name #{nombre}@#{host} --cookie palabrasecreta",
+      "elixir --name #{nombre}@#{host} --cookie jtambo99",
       "--erl  \'-kernel_inet_dist_listen_min 32000\'",
       "--erl  \'-kernel_inet_dist_listen_max 32049\'",
       "--erl -detached",
@@ -35,7 +35,7 @@ defmodule NodoRemoto do
     # estilo kill -9, ahora nos va
     :rpc.call(nodo, :erlang, :halt, [])
 
-    # tambien habría que eliminar epmd, 
+    # tambien habría que eliminar epmd,
     # en el script shell externo
   end
 
