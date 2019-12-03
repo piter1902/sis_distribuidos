@@ -20,7 +20,8 @@ defmodule GestorVistasTest do
     # Poner en marcha los servidores, obtener nodos
     # maquinas = ["localhost.localhost", "155.210.154.206",
     #            "155.210.154.207", "155.210.154.208"]
-    maquinas = ["localhost.localhost"]
+    # maquinas = ["localhost.localhost"]
+    maquinas = ["127.0.0.1"]
     # devuelve una mapa de nodos del servidor y clientes
     IO.puts("LLEgo")
     nodos = startServidores(maquinas)

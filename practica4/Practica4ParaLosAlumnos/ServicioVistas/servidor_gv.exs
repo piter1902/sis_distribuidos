@@ -153,7 +153,7 @@ defmodule ServidorGV do
         {:obten_vista_valida, pid} ->
           send(
             pid,
-            obtener_vista(ServidorGV)
+            {%ServidorGV[:num_vista], %ServidorGV[:primario], %ServidorGV[:copia]}
           )
           {vista_tentativa, latidos_fallidos, nodos_espera}
 
