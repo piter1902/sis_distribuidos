@@ -116,7 +116,7 @@ defmodule ServidorGV do
               n_vista_latido == -1 ->
                 # nodo_emisor es primario pero no confirma la vista
                 send(
-                  pid,
+                  nodo_emisor,
                   obtener_vista(vista_tentativa)
                 )
                 {vista_tentativa, latidos_fallidos, nodos_espera}
@@ -186,7 +186,7 @@ defmodule ServidorGV do
                 vista_tentiva = %{vista_tentativa | primario: ServidorGV.copia()}
                 # Buscamos el nuevo nodo copia
                 {vista_tentativa, nodos_espera} =
-                  if lenght(nodos_espera) > 0 do
+                  if length(nodos_espera) > 0 do
                     # Hay nodos en espera
                     [copia_nueva | resto] = nodos_espera
                     nodos_espera = resto
