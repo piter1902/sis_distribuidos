@@ -22,7 +22,7 @@ defmodule GestorVistasTest do
     #            "155.210.154.207", "155.210.154.208"]
     # maquinas = ["localhost.localhost"]
     #maquinas = ["127.0.0.1"]
-    maquinas = ["127.0.0.1", "155.210.154.197",
+    maquinas = ["127.0.0.1", "155.210.154.195",
                 "155.210.154.200", "155.210.154.198"]
     # devuelve una mapa de nodos del servidor y clientes
     nodos = startServidores(maquinas)
@@ -142,6 +142,7 @@ defmodule GestorVistasTest do
     primario_rearrancado(c1, c3, 5, ServidorGV.latidos_fallidos() * 2)
 
     comprobar_tentativa(c3, c3, c1, vista.num_vista)
+    IO.puts("Al final de test 7, vista valida: #{inspect ClienteGV.obten_vista(c3)}")
   end
 
 
@@ -151,17 +152,22 @@ defmodule GestorVistasTest do
   ##          - C3 no confirma vista en que es primario,
   ##          - Cae, pero C1 no es promocionado porque C3 no confimo !
   # primario_no_confirma_vista(C1, C2, C3),
-   @tag :deshabilitado
+  # @tag :deshabilitado
     test "Primario no confirma vista,", %{c1: c1,c3: c3,c2: c2} do
       IO.puts("Test 8: Primario no confirma vista ...")
-      #Si envía un -1, no confirma vista y la vista devuelta debería tener a copia como :undefined
-      {vista, _} = ClienteGV.latido(c2, 0)
+
+      {vista, _} = ClienteGV.latido(c3, -1)
+      # hacemos que c1 caiga
+      saltar_timeout_copia(c3,vista.num_vista)
+      # c1 rearranca y lo pone como copia en TENTATIVA
+      ClienteGV.latido(c1, 0)
       # c2 rearranca
-      ClienteGV.latido(c3, -1)
-      comprobar_tentativa(c3, c3, :undefined, vista.num_vista)
-      # c3 cae
-      {vista, _} = ClienteGV.latido(c1, 4)
-      espera_pasa_a_copia(c1, c3, 4, ServidorGV.latidos_fallidos() * 2)
+      ClienteGV.latido(c2, 0)
+      # Damos tiempo para que el gestor detecte que primario ha caido y actualice la vista a {num_vista, :undefined, :undefined}
+      {vista} = primario_no_confirma_vista(c1, c2, vista.num_vista, ServidorGV.latidos_fallidos() * 2)
+      # Comprobamos la vista que tenemos al final
+      IO.puts("En test 8: vista valida: #{inspect ClienteGV.obten_vista(c1)}")
+      comprobar_tentativa(c1, :undefined, :undefined, vista.num_vista)
     end
   ## Test 9 : Si anteriores servidores caen (Primario  y Copia),
   ##       un nuevo servidor sin inicializar no puede convertirse en primario.
@@ -315,5 +321,22 @@ defmodule GestorVistasTest do
     assert vista.copia == nodo_copia
 
     assert vista.num_vista == n_vista
+  end
+  defp primario_no_confirma_vista(_c1, _c2, _n_vista, 0), do: :fin
+
+  defp primario_no_confirma_vista(c1, c2, n_vista, latidos) do
+    ClienteGV.latido(c1, n_vista)
+    {vista,_} = ClienteGV.latido(c2, n_vista)
+    if vista.primario != :undefined do
+      primario_no_confirma_vista(c1, c2, n_vista, latidos - 1)
+    end
+    {vista}
+  end
+
+  defp saltar_timeout_copia(c3,n_vista) do
+    {vista, _} = ClienteGV.latido(c3, n_vista)
+    if vista.copia != :undefined do
+      saltar_timeout_copia(c3,vista.num_vista)
+    end
   end
 end

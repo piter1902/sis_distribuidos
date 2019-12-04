@@ -252,7 +252,7 @@ defmodule ServidorGV do
                     # Las vistas coinciden -> Se valida la vista tentativa
                     IO.puts("Se actualiza VISTA")
                     vista_valida = vista_tentativa
-                    {vista_valida}
+                     {vista_valida}
                   else
                     {vista_valida}
                   end
@@ -281,6 +281,9 @@ defmodule ServidorGV do
           IO.puts("Nos pide vista valida!")
           IO.inspect(obtener_vista(vista_tentativa))
 
+          IO.inspect(
+            {:vista_tentativa, obtener_vista(vista_tentativa), vista_valida == vista_tentativa}
+          )
           IO.inspect(
             {:vista_valida, obtener_vista(vista_valida), vista_valida == vista_tentativa}
           )
