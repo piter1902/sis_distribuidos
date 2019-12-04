@@ -168,7 +168,7 @@ defmodule ServidorGV do
                           end
                         end)
 
-                        {vista_tentativa, nodos_espera, latidos_fallidos}
+                      {vista_tentativa, nodos_espera, latidos_fallidos}
 
                     vista_tentativa.copia == nodo_emisor ->
                       # Recaida de copia
@@ -210,7 +210,7 @@ defmodule ServidorGV do
                           end
                         end)
 
-                        {vista_tentativa, nodos_espera, latidos_fallidos}
+                      {vista_tentativa, nodos_espera, latidos_fallidos}
 
                     vista_tentativa.primario != nodo_emisor and
                         vista_tentativa.copia != nodo_emisor ->
