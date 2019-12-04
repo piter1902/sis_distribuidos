@@ -168,7 +168,7 @@ defmodule ServidorGV do
                           end
                         end)
 
-                        {vista_tentativa, nodos_espera, latidos_fallidos}
+                      {vista_tentativa, nodos_espera, latidos_fallidos}
 
                     vista_tentativa.copia == nodo_emisor ->
                       # Recaida de copia
@@ -210,7 +210,7 @@ defmodule ServidorGV do
                           end
                         end)
 
-                        {vista_tentativa, nodos_espera, latidos_fallidos}
+                      {vista_tentativa, nodos_espera, latidos_fallidos}
 
                     vista_tentativa.primario != nodo_emisor and
                         vista_tentativa.copia != nodo_emisor ->
@@ -353,6 +353,32 @@ defmodule ServidorGV do
               estado_copia != :copia_ok ->
                 IO.puts("Copia caido!")
                 # Copia ha caido y primario no. Nodos en espera -> copia
+                vista_tentativa = %ServidorGV{
+                  vista_tentativa
+                  | num_vista: vista_tentativa.num_vista + 1
+                }
+
+                # Buscamos el nuevo nodo copia
+                {vista_tentativa, nodos_espera} =
+                  if length(nodos_espera) > 0 do
+                    # Hay nodos en espera
+                    [copia_nueva | resto] = nodos_espera
+                    nodos_espera = resto
+                    # Lo establecemos como copia
+                    vista_tentativa = %ServidorGV{vista_tentativa | copia: copia_nueva}
+                    {vista_tentativa, nodos_espera}
+                  else
+                    vista_tentativa = %ServidorGV{vista_tentativa | copia: :undefined}
+
+                    IO.puts(
+                      "Vista tentativa despues de que no haya en espera: #{
+                        inspect(vista_tentativa)
+                      }"
+                    )
+
+                    {vista_tentativa, nodos_espera}
+                  end
+
                 {vista_tentativa, nodos_espera}
 
               true ->
