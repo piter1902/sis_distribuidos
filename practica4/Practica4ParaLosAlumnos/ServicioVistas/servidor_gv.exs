@@ -76,7 +76,7 @@ defmodule ServidorGV do
     latidos_fallidos = []
     # Al inicio vista_valida = vista_tentativa -> Ambos campos son :undefined
     # Mantenemos el valor de la vista_valida como el struct del modulo ServidorGV -> al inicio = vista_tentativa
-    bucle_recepcion(%ServidorGV{}, vista_inicial(), latidos_fallidos, nodos_espera)
+    bucle_recepcion(%ServidorGV{}, %ServidorGV{}, latidos_fallidos, nodos_espera)
   end
 
   def init_monitor(pid_principal) do
@@ -96,13 +96,13 @@ defmodule ServidorGV do
                 {vista_tentativa, nodos_espera} =
                   cond do
                     vista_valida.primario == :undefined ->
-                      vista_tentiva = %{vista_tentativa | primario: nodo_emisor}
-                      vista_tentiva = %{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
+                      vista_tentiva = %ServidorGV{vista_tentativa | primario: nodo_emisor}
+                      vista_tentiva = %ServidorGV{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
                       {vista_tentativa, nodos_espera}
 
                       vista_valida.copia == :undefined ->
-                        vista_tentiva = %{vista_tentativa | copia: nodo_emisor}
-                        vista_tentiva = %{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
+                        vista_tentiva = %ServidorGV{vista_tentativa | copia: nodo_emisor}
+                        vista_tentiva = %ServidorGV{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
                       {vista_tentativa, nodos_espera}
 
                     true ->
@@ -190,8 +190,8 @@ defmodule ServidorGV do
 
               estado_primario != :primario_ok ->
                 # Primario ha caido y copia no -> Promocionamos copia y nodo en espera -> copia
-                vista_tentiva = %{vista_tentativa | primario: vista_valida.copia}
-                vista_tentiva = %{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
+                vista_tentiva = %ServidorGV{vista_tentativa | primario: vista_valida.copia}
+                vista_tentiva = %ServidorGV{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
                 # Buscamos el nuevo nodo copia
                 {vista_tentativa, nodos_espera} =
                   if length(nodos_espera) > 0 do
@@ -199,7 +199,7 @@ defmodule ServidorGV do
                     [copia_nueva | resto] = nodos_espera
                     nodos_espera = resto
                     # Lo establecemos como copia
-                    vista_tentiva = %{vista_tentativa | copia: copia_nueva}
+                    vista_tentiva = %ServidorGV{vista_tentativa | copia: copia_nueva}
                     {vista_tentativa, nodos_espera}
                   end
 
