@@ -90,11 +90,12 @@ defmodule ServidorGV do
       receive do
         {:latido, n_vista_latido, nodo_emisor} ->
           IO.inspect({:latido, n_vista_latido, nodo_emisor})
+
           {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera} =
             cond do
               n_vista_latido == 0 ->
                 # Latido es 0 -> Recaida
-                {vista_tentativa, nodos_espera} =
+                {vista_tentativa, nodos_espera, latidos_fallidos} =
                   cond do
                     vista_tentativa.primario == :undefined ->
                       IO.puts("asigno primario!")
@@ -106,7 +107,7 @@ defmodule ServidorGV do
                       }
 
                       IO.inspect(vista_tentativa)
-                      {vista_tentativa, nodos_espera}
+                      {vista_tentativa, nodos_espera, latidos_fallidos}
 
                     # Asignamos copia si el nodo del que recibimos mensaje no es el primario
                     vista_tentativa.copia == :undefined and
@@ -120,22 +121,111 @@ defmodule ServidorGV do
                       }
 
                       IO.inspect(vista_tentativa)
-                      {vista_tentativa, nodos_espera}
+                      {vista_tentativa, nodos_espera, latidos_fallidos}
+
+                    vista_tentativa.primario == nodo_emisor ->
+                      # Recaida del primario
+                      # Promocion de copia a primario -> si existe
+                      vista_tentativa = %ServidorGV{
+                        vista_tentativa
+                        | primario: vista_tentativa.copia
+                      }
+
+                      vista_tentativa = %ServidorGV{
+                        vista_tentativa
+                        | num_vista: vista_tentativa.num_vista + 1
+                      }
+
+                      {vista_tentativa, nodos_espera} =
+                        if length(nodos_espera) > 0 do
+                          # Añadimos caido a lista de espera sii hay nueva copia asignada
+                          # Hay nodos en espera
+                          [copia_nueva | resto] = nodos_espera
+                          nodos_espera = resto
+                          # Lo establecemos como copia
+                          vista_tentativa = %ServidorGV{vista_tentativa | copia: copia_nueva}
+                          nodos_espera = nodos_espera ++ [nodo_emisor]
+                          {vista_tentativa, nodos_espera}
+                        else
+                          vista_tentativa = %ServidorGV{vista_tentativa | copia: nodo_emisor}
+
+                          IO.puts(
+                            "Vista tentativa despues de que no haya en espera: #{
+                              inspect(vista_tentativa)
+                            }"
+                          )
+
+                          {vista_tentativa, nodos_espera}
+                        end
+
+                      # Reiniciamos latidos del nodo caido
+                      latidos_fallidos =
+                        Enum.map(latidos_fallidos, fn {a, b} ->
+                          if a == nodo_emisor do
+                            {a, 0}
+                          else
+                            {a, b}
+                          end
+                        end)
+
+                        {vista_tentativa, nodos_espera, latidos_fallidos}
+
+                    vista_tentativa.copia == nodo_emisor ->
+                      # Recaida de copia
+                      # Añadimos caido a lista de espera sii hay nueva copia asignada
+                      vista_tentativa = %ServidorGV{
+                        vista_tentativa
+                        | num_vista: vista_tentativa.num_vista + 1
+                      }
+
+                      {vista_tentativa, nodos_espera} =
+                        if length(nodos_espera) > 0 do
+                          # Añadimos caido a lista de espera sii hay nueva copia asignada
+                          # Hay nodos en espera
+                          [copia_nueva | resto] = nodos_espera
+                          nodos_espera = resto
+                          # Lo establecemos como copia
+                          vista_tentativa = %ServidorGV{vista_tentativa | copia: copia_nueva}
+                          nodos_espera = nodos_espera ++ [nodo_emisor]
+                          {vista_tentativa, nodos_espera}
+                        else
+                          vista_tentativa = %ServidorGV{vista_tentativa | copia: nodo_emisor}
+
+                          IO.puts(
+                            "Vista tentativa despues de que no haya en espera: #{
+                              inspect(vista_tentativa)
+                            }"
+                          )
+
+                          {vista_tentativa, nodos_espera}
+                        end
+
+                      # Reiniciamos latidos del nodo caido
+                      latidos_fallidos =
+                        Enum.map(latidos_fallidos, fn {a, b} ->
+                          if a == nodo_emisor do
+                            {a, 0}
+                          else
+                            {a, b}
+                          end
+                        end)
+
+                        {vista_tentativa, nodos_espera, latidos_fallidos}
 
                     vista_tentativa.primario != nodo_emisor and
                         vista_tentativa.copia != nodo_emisor ->
                       nodos_espera = nodos_espera ++ [nodo_emisor]
-                      {vista_tentativa, nodos_espera}
+                      {vista_tentativa, nodos_espera, latidos_fallidos}
 
                     true ->
-                      {vista_tentativa, nodos_espera}
+                      {vista_tentativa, nodos_espera, latidos_fallidos}
                   end
 
                 # Aun no ha fallado ningun latido
                 latidos_fallidos = latidos_fallidos ++ [{nodo_emisor, 0}]
 
                 send(
-                  {:cliente_gv,nodo_emisor},
+                  {:cliente_gv, nodo_emisor},
                   {:vista_tentativa, obtener_vista(vista_tentativa),
                    vista_tentativa == vista_valida}
                 )
@@ -179,7 +269,7 @@ defmodule ServidorGV do
 
                 # Le devolvemos la vista tentativa
                 send(
-                  {:cliente_gv,nodo_emisor},
+                  {:cliente_gv, nodo_emisor},
                   {:vista_tentativa, obtener_vista(vista_tentativa),
                    vista_tentativa == vista_valida}
                 )
@@ -190,7 +280,11 @@ defmodule ServidorGV do
         {:obten_vista_valida, pid} ->
           IO.puts("Nos pide vista valida!")
           IO.inspect(obtener_vista(vista_tentativa))
-          IO.inspect({:vista_valida, obtener_vista(vista_valida), vista_valida == vista_tentativa})
+
+          IO.inspect(
+            {:vista_valida, obtener_vista(vista_valida), vista_valida == vista_tentativa}
+          )
+
           send(
             pid,
             {:vista_valida, obtener_vista(vista_valida), vista_valida == vista_tentativa}
@@ -244,7 +338,13 @@ defmodule ServidorGV do
                     {vista_tentativa, nodos_espera}
                   else
                     vista_tentativa = %ServidorGV{vista_tentativa | copia: :undefined}
-                    IO.puts("Vista tentativa despues de que no haya en espera: #{inspect vista_tentativa}")
+
+                    IO.puts(
+                      "Vista tentativa despues de que no haya en espera: #{
+                        inspect(vista_tentativa)
+                      }"
+                    )
+
                     {vista_tentativa, nodos_espera}
                   end
 
@@ -287,7 +387,7 @@ defmodule ServidorGV do
 
   # OTRAS FUNCIONES PRIVADAS VUESTRAS
   defp obtener_vista(vista) do
-    #{vista.num_vista, vista.primario, vista.copia}
+    # {vista.num_vista, vista.primario, vista.copia}
     vista
   end
 end

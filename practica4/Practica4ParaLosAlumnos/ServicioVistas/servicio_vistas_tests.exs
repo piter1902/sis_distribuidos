@@ -109,7 +109,7 @@ defmodule GestorVistasTest do
 
   ## Test 6 : C3 como nuevo nodo (en espera), después C2 cae como primario.
   ##          Resultado : copia (C1) pasa a primario y C3 pasa a nodo copia
-  @tag :deshabilitado
+  # @tag :deshabilitado
   test "Servidor en espera se convierte en copia", %{c1: c1, c3: c3} do
     IO.puts("Test 6: Servidor en espera se convierte en copia ...")
 
@@ -128,8 +128,9 @@ defmodule GestorVistasTest do
     IO.puts(" ... Superado")
   end
 
-  ## Test 7 : Primario rearrancado (C2) tratado como caido, debe considerarlo #           caido aunque envie latido, y es convertido en nodo en espera.
-  @tag :deshabilitado
+  ## Test 7 : Primario rearrancado (C1) tratado como caido, debe considerarlo
+  #           caido aunque envie latido, y es convertido en nodo en espera.
+  # @tag :deshabilitado
   test "Primario rearrancado tratado como caido", %{c1: c1, c3: c3} do
     IO.puts("Test 7: Primario rearrancado tratado como caido ...")
 
