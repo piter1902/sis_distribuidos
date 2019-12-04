@@ -21,9 +21,10 @@ defmodule GestorVistasTest do
     # maquinas = ["localhost.localhost", "155.210.154.206",
     #            "155.210.154.207", "155.210.154.208"]
     # maquinas = ["localhost.localhost"]
-    maquinas = ["127.0.0.1"]
+    #maquinas = ["127.0.0.1"]
+    maquinas = ["127.0.0.1", "155.210.154.197",
+                "155.210.154.200", "155.210.154.198"]
     # devuelve una mapa de nodos del servidor y clientes
-    IO.puts("LLEgo")
     nodos = startServidores(maquinas)
 
     on_exit(fn ->
@@ -150,9 +151,18 @@ defmodule GestorVistasTest do
   ##          - C3 no confirma vista en que es primario,
   ##          - Cae, pero C1 no es promocionado porque C3 no confimo !
   # primario_no_confirma_vista(C1, C2, C3),
-  # @tag :deshabilitado
-
-
+   @tag :deshabilitado
+    test "Primario no confirma vista,", %{c1: c1,c3: c3,c2: c2} do
+      IO.puts("Test 8: Primario no confirma vista ...")
+      #Si envía un -1, no confirma vista y la vista devuelta debería tener a copia como :undefined
+      {vista, _} = ClienteGV.latido(c2, 0)
+      # c2 rearranca
+      ClienteGV.latido(c3, -1)
+      comprobar_tentativa(c3, c3, :undefined, vista.num_vista)
+      # c3 cae
+      {vista, _} = ClienteGV.latido(c1, 4)
+      espera_pasa_a_copia(c1, c3, 4, ServidorGV.latidos_fallidos() * 2)
+    end
   ## Test 9 : Si anteriores servidores caen (Primario  y Copia),
   ##       un nuevo servidor sin inicializar no puede convertirse en primario.
   # sin_inicializar_no(C1, C2, C3),
