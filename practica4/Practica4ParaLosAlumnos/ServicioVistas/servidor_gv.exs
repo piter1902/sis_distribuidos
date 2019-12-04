@@ -89,51 +89,82 @@ defmodule ServidorGV do
     {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera} =
       receive do
         {:latido, n_vista_latido, nodo_emisor} ->
+          IO.inspect({:latido, n_vista_latido, nodo_emisor})
           {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera} =
             cond do
               n_vista_latido == 0 ->
                 # Latido es 0 -> Recaida
                 {vista_tentativa, nodos_espera} =
                   cond do
-                    vista_valida.primario == :undefined ->
-                      vista_tentiva = %ServidorGV{vista_tentativa | primario: nodo_emisor}
-                      vista_tentiva = %ServidorGV{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
+                    vista_tentativa.primario == :undefined ->
+                      IO.puts("asigno primario!")
+                      vista_tentativa = %ServidorGV{vista_tentativa | primario: nodo_emisor}
+
+                      vista_tentativa = %ServidorGV{
+                        vista_tentativa
+                        | num_vista: vista_tentativa.num_vista + 1
+                      }
+
+                      IO.inspect(vista_tentativa)
                       {vista_tentativa, nodos_espera}
 
-                      vista_valida.copia == :undefined ->
-                        vista_tentiva = %ServidorGV{vista_tentativa | copia: nodo_emisor}
-                        vista_tentiva = %ServidorGV{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
+                    # Asignamos copia si el nodo del que recibimos mensaje no es el primario
+                    vista_tentativa.copia == :undefined and
+                        vista_tentativa.primario != nodo_emisor ->
+                      IO.puts("asigno copia!")
+                      vista_tentativa = %ServidorGV{vista_tentativa | copia: nodo_emisor}
+
+                      vista_tentativa = %ServidorGV{
+                        vista_tentativa
+                        | num_vista: vista_tentativa.num_vista + 1
+                      }
+
+                      IO.inspect(vista_tentativa)
+                      {vista_tentativa, nodos_espera}
+
+                    vista_tentativa.primario != nodo_emisor and
+                        vista_tentativa.copia != nodo_emisor ->
+                      nodos_espera = nodos_espera ++ [nodo_emisor]
                       {vista_tentativa, nodos_espera}
 
                     true ->
-                      nodos_espera = nodos_espera ++ [nodo_emisor]
                       {vista_tentativa, nodos_espera}
                   end
 
                 # Aun no ha fallado ningun latido
                 latidos_fallidos = latidos_fallidos ++ [{nodo_emisor, 0}]
-                {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera}
 
-              # Latido != 0
-              n_vista_latido == -1 ->
-                # nodo_emisor es primario pero no confirma la vista
                 send(
-                  nodo_emisor,
-                  obtener_vista(vista_tentativa)
+                  {:cliente_gv,nodo_emisor},
+                  {:vista_tentativa, obtener_vista(vista_tentativa),
+                   vista_tentativa == vista_valida}
                 )
 
                 {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera}
 
-              n_vista_latido > 0 ->
+              # Latido != 0
+              # n_vista_latido == -1 ->
+              #   # nodo_emisor es primario pero no confirma la vista
+              #   send(
+              #     nodo_emisor,
+              #     {:vista_tentativa, obtener_vista(vista_tentativa),
+              #      vista_tentativa == vista_valida}
+              #   )
+
+              #   {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera}
+
+              n_vista_latido != 0 ->
                 # Funcionamiento normal
                 # validar la vista -> si es el primario y numero de vista == vista tentativa
                 {vista_valida} =
-                  if nodo_emisor == vista_tentativa.primario do
-                    if n_vista_latido == vista_tentativa.num_vista do
-                      # Las vistas coinciden -> Se valida la vista tentativa
-                      vista_valida = vista_tentativa
-                      {vista_valida}
-                    end
+                  if nodo_emisor == vista_tentativa.primario and
+                       n_vista_latido == vista_tentativa.num_vista do
+                    # Las vistas coinciden -> Se valida la vista tentativa
+                    IO.puts("Se actualiza VISTA")
+                    vista_valida = vista_tentativa
+                    {vista_valida}
+                  else
+                    {vista_valida}
                   end
 
                 # Resetamos los latidos fallidos de la lista a 0 para el nodo nodo_emisor
@@ -148,17 +179,21 @@ defmodule ServidorGV do
 
                 # Le devolvemos la vista tentativa
                 send(
-                  nodo_emisor,
-                  obtener_vista(vista_tentativa)
+                  {:cliente_gv,nodo_emisor},
+                  {:vista_tentativa, obtener_vista(vista_tentativa),
+                   vista_tentativa == vista_valida}
                 )
 
                 {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera}
             end
 
         {:obten_vista_valida, pid} ->
+          IO.puts("Nos pide vista valida!")
+          IO.inspect(obtener_vista(vista_tentativa))
+          IO.inspect({:vista_valida, obtener_vista(vista_valida), vista_valida == vista_tentativa})
           send(
             pid,
-            obtener_vista(vista_valida)
+            {:vista_valida, obtener_vista(vista_valida), vista_valida == vista_tentativa}
           )
 
           {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera}
@@ -189,9 +224,15 @@ defmodule ServidorGV do
                 {vista_tentativa, nodos_espera}
 
               estado_primario != :primario_ok ->
+                IO.puts("Primario caido!")
                 # Primario ha caido y copia no -> Promocionamos copia y nodo en espera -> copia
-                vista_tentiva = %ServidorGV{vista_tentativa | primario: vista_valida.copia}
-                vista_tentiva = %ServidorGV{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
+                vista_tentativa = %ServidorGV{vista_tentativa | primario: vista_valida.copia}
+
+                vista_tentativa = %ServidorGV{
+                  vista_tentativa
+                  | num_vista: vista_tentativa.num_vista + 1
+                }
+
                 # Buscamos el nuevo nodo copia
                 {vista_tentativa, nodos_espera} =
                   if length(nodos_espera) > 0 do
@@ -199,13 +240,18 @@ defmodule ServidorGV do
                     [copia_nueva | resto] = nodos_espera
                     nodos_espera = resto
                     # Lo establecemos como copia
-                    vista_tentiva = %ServidorGV{vista_tentativa | copia: copia_nueva}
+                    vista_tentativa = %ServidorGV{vista_tentativa | copia: copia_nueva}
+                    {vista_tentativa, nodos_espera}
+                  else
+                    vista_tentativa = %ServidorGV{vista_tentativa | copia: :undefined}
+                    IO.puts("Vista tentativa despues de que no haya en espera: #{inspect vista_tentativa}")
                     {vista_tentativa, nodos_espera}
                   end
 
                 {vista_tentativa, nodos_espera}
 
               estado_copia != :copia_ok ->
+                IO.puts("Copia caido!")
                 # Copia ha caido y primario no. Nodos en espera -> copia
                 {vista_tentativa, nodos_espera}
 
@@ -241,6 +287,7 @@ defmodule ServidorGV do
 
   # OTRAS FUNCIONES PRIVADAS VUESTRAS
   defp obtener_vista(vista) do
-    {vista.num_vista, vista.primario, vista.copia}
+    #{vista.num_vista, vista.primario, vista.copia}
+    vista
   end
 end

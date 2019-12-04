@@ -48,7 +48,7 @@ defmodule GestorVistasTest do
   end
 
   # Test 2 : primer primario
-  @tag :deshabilitado
+  # @tag :deshabilitado
   test "Primer primario", %{c1: c} do
     IO.puts("Test 2: Primer primario ...")
 
@@ -59,7 +59,7 @@ defmodule GestorVistasTest do
   end
 
   # Test 3 : primer nodo copia
-  @tag :deshabilitado
+  # @tag :deshabilitado
   test "Primer nodo copia", %{c1: c1, c2: c2} do
     IO.puts("Test 3: Primer nodo copia ...")
 
@@ -76,7 +76,7 @@ defmodule GestorVistasTest do
   end
 
   ## Test 4 : Después, Copia (C2) toma el relevo si Primario (C1) falla.
-  @tag :deshabilitado
+  # @tag :deshabilitado
   test "Copia releva primario", %{c2: c2} do
     IO.puts("Test4 : copia toma relevo si primario falla ...")
 
@@ -90,7 +90,7 @@ defmodule GestorVistasTest do
   end
 
   ## Test 5 : Nodo rearrancado (C1) se convierte en copia.
-  @tag :deshabilitado
+  # @tag :deshabilitado
   test "Servidor rearrancado se conviert en copia", %{c1: c1, c2: c2} do
     IO.puts("Test 5: Servidor rearrancado se convierte en copia ...")
 
@@ -286,7 +286,7 @@ defmodule GestorVistasTest do
   defp comprobar_tentativa(nodo_cliente, nodo_primario, nodo_copia, n_vista) do
     # Solo interesa vista tentativa
     {vista, _} = ClienteGV.latido(nodo_cliente, -1)
-
+    IO.inspect({nodo_primario, nodo_copia, n_vista, vista})
     comprobar(nodo_primario, nodo_copia, n_vista, vista)
   end
 
