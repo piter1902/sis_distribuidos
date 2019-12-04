@@ -75,8 +75,8 @@ defmodule ServidorGV do
     # Tendra una estructura [{nombre_nodo1, numero_latidos_fallidos1}, {nombre_nodo2, numero_latidos_fallidos2}, ... , {nombre_nodoN, numero_latidos_fallidosN}]
     latidos_fallidos = []
     # Al inicio vista_valida = vista_tentativa -> Ambos campos son :undefined
-    # Mantenemos el valor de la vista_valida en el struct del modulo ServidorGV -> al inicio = vista_tentativa
-    bucle_recepcion(vista_inicial(), latidos_fallidos, nodos_espera)
+    # Mantenemos el valor de la vista_valida como el struct del modulo ServidorGV -> al inicio = vista_tentativa
+    bucle_recepcion(%ServidorGV{}, vista_inicial(), latidos_fallidos, nodos_espera)
   end
 
   def init_monitor(pid_principal) do
@@ -85,21 +85,21 @@ defmodule ServidorGV do
     init_monitor(pid_principal)
   end
 
-  defp bucle_recepcion(vista_tentativa, latidos_fallidos, nodos_espera) do
-    {vista_tentativa, latidos_fallidos, nodos_espera} =
+  defp bucle_recepcion(vista_valida, vista_tentativa, latidos_fallidos, nodos_espera) do
+    {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera} =
       receive do
         {:latido, n_vista_latido, nodo_emisor} ->
-          {vista_tentativa, latidos_fallidos, nodos_espera} =
+          {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera} =
             cond do
               n_vista_latido == 0 ->
                 # Latido es 0 -> Recaida
                 {vista_tentativa, nodos_espera} =
                   cond do
-                    ServidorGV.primario() == :undefined ->
+                    vista_valida.primario == :undefined ->
                       vista_tentiva = %{vista_tentativa | primario: nodo_emisor}
                       {vista_tentativa, nodos_espera}
 
-                    ServidorGV.copia() == :undefined ->
+                    vista_valida.copia == :undefined ->
                       vista_tentiva = %{vista_tentativa | copia: nodo_emisor}
                       {vista_tentativa, nodos_espera}
 
@@ -110,7 +110,7 @@ defmodule ServidorGV do
 
                 # Aun no ha fallado ningun latido
                 latidos_fallidos = latidos_fallidos ++ [{nodo_emisor, 0}]
-                {vista_tentativa, latidos_fallidos, nodos_espera}
+                {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera}
 
               # Latido != 0
               n_vista_latido == -1 ->
@@ -119,17 +119,20 @@ defmodule ServidorGV do
                   nodo_emisor,
                   obtener_vista(vista_tentativa)
                 )
-                {vista_tentativa, latidos_fallidos, nodos_espera}
+
+                {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera}
 
               n_vista_latido > 0 ->
                 # Funcionamiento normal
                 # validar la vista -> si es el primario y numero de vista == vista tentativa
-                if nodo_emisor == vista_tentativa.primario do
-                  if n_vista_latido == vista_tentativa.num_vista do
-                    # Las vistas coinciden -> Se valida la vista tentativa
-                    ServidorGV = vista_tentativa
+                {vista_valida} =
+                  if nodo_emisor == vista_tentativa.primario do
+                    if n_vista_latido == vista_tentativa.num_vista do
+                      # Las vistas coinciden -> Se valida la vista tentativa
+                      vista_valida = vista_tentativa
+                      {vista_valida}
+                    end
                   end
-                end
 
                 # Resetamos los latidos fallidos de la lista a 0 para el nodo nodo_emisor
                 latidos_fallidos =
@@ -147,15 +150,16 @@ defmodule ServidorGV do
                   obtener_vista(vista_tentativa)
                 )
 
-                {vista_tentativa, latidos_fallidos, nodos_espera}
+                {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera}
             end
 
         {:obten_vista_valida, pid} ->
           send(
             pid,
-            {%ServidorGV[:num_vista], %ServidorGV[:primario], %ServidorGV[:copia]}
+            obtener_vista(vista_valida)
           )
-          {vista_tentativa, latidos_fallidos, nodos_espera}
+
+          {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera}
 
         :procesa_situacion_servidores ->
           # Todos los elementos de latidos_fallidos + 1 latido fallido
@@ -183,7 +187,7 @@ defmodule ServidorGV do
 
               estado_primario != :primario_ok ->
                 # Primario ha caido y copia no -> Promocionamos copia y nodo en espera -> copia
-                vista_tentiva = %{vista_tentativa | primario: ServidorGV.copia()}
+                vista_tentiva = %{vista_tentativa | primario: vista_valida.copia}
                 # Buscamos el nuevo nodo copia
                 {vista_tentativa, nodos_espera} =
                   if length(nodos_espera) > 0 do
@@ -224,10 +228,10 @@ defmodule ServidorGV do
             end)
 
           # Devolvemos los valores actualizados
-          {vista_tentativa, latidos_fallidos, nodos_espera}
+          {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera}
       end
 
-    bucle_recepcion(vista_tentativa, latidos_fallidos, nodos_espera)
+    bucle_recepcion(vista_valida, vista_tentativa, latidos_fallidos, nodos_espera)
   end
 
   # OTRAS FUNCIONES PRIVADAS VUESTRAS
