@@ -97,10 +97,12 @@ defmodule ServidorGV do
                   cond do
                     vista_valida.primario == :undefined ->
                       vista_tentiva = %{vista_tentativa | primario: nodo_emisor}
+                      vista_tentiva = %{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
                       {vista_tentativa, nodos_espera}
 
-                    vista_valida.copia == :undefined ->
-                      vista_tentiva = %{vista_tentativa | copia: nodo_emisor}
+                      vista_valida.copia == :undefined ->
+                        vista_tentiva = %{vista_tentativa | copia: nodo_emisor}
+                        vista_tentiva = %{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
                       {vista_tentativa, nodos_espera}
 
                     true ->
@@ -183,11 +185,13 @@ defmodule ServidorGV do
             cond do
               estado_primario != :primario_ok and estado_copia != :copia_ok ->
                 # Ambos han caido -> fallo de consistencia
+                IO.puts("Fallo critico")
                 {vista_tentativa, nodos_espera}
 
               estado_primario != :primario_ok ->
                 # Primario ha caido y copia no -> Promocionamos copia y nodo en espera -> copia
                 vista_tentiva = %{vista_tentativa | primario: vista_valida.copia}
+                vista_tentiva = %{vista_tentativa | num_vista: vista_tentativa[:num_vista] + 1}
                 # Buscamos el nuevo nodo copia
                 {vista_tentativa, nodos_espera} =
                   if length(nodos_espera) > 0 do
@@ -202,6 +206,7 @@ defmodule ServidorGV do
                 {vista_tentativa, nodos_espera}
 
               estado_copia != :copia_ok ->
+                # Copia ha caido y primario no. Nodos en espera -> copia
                 {vista_tentativa, nodos_espera}
 
               true ->
