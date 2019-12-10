@@ -20,8 +20,8 @@ defmodule GestorVistasTest do
     # Poner en marcha los servidores, obtener nodos
     # maquinas = ["localhost.localhost", "155.210.154.206",
     #            "155.210.154.207", "155.210.154.208"]
-    maquinas = ["localhost.localhost"]
-    # maquinas = ["127.0.0.1"]
+    # maquinas = ["localhost.localhost"]
+     maquinas = ["127.0.0.1"]
     # maquinas = ["127.0.0.1", "155.210.154.201",
     #            "155.210.154.202", "155.210.154.204"]
     # devuelve una mapa de nodos del servidor y clientes
@@ -154,7 +154,6 @@ defmodule GestorVistasTest do
   @tag :deshabilitado
   test "Primario no confirma vista,", %{c1: c1, c3: c3, c2: c2} do
     IO.puts("Test 8: Primario no confirma vista ...")
-
 
     {vista, _} = ClienteGV.latido(c2, 0)
 
