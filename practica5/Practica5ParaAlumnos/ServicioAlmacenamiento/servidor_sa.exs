@@ -5,7 +5,11 @@ defmodule ServidorSA do
   # Si rol: :primario, para poder contestar peticiones, copia debe ser != :undefined, en caso contrario,
   #         se para el sistema por fallo de disponibilidad.
   #     rol = {:espera, :primario, :copia}
-  defstruct rol: :undefined, num_vista: 0, pid_primario: :undefined, pid_copia: :undefined, datos: %{}
+  defstruct rol: :undefined,
+            num_vista: 0,
+            pid_primario: :undefined,
+            pid_copia: :undefined,
+            datos: %{}
 
   @intervalo_latido 50
 
@@ -65,9 +69,48 @@ defmodule ServidorSA do
         # Solicitudes de lectura y escritura
         # de clientes del servicio alm.
         {op, param, nodo_origen} ->
-          # Solo podemos contestar si tenemos copia
-          if estado.copia != :undefined do
-          end
+          estado =
+            cond do
+              estado.rol == :primario ->
+                # Solo podemos contestar si tenemos copia
+                estado =
+                  if estado.pid_copia != :undefined do
+                    # Repetimos la operacion al nodo copia con nodo_origen = self()
+                    send(
+                      estado.pid_copia,
+                      {op, param, self()}
+                    )
+
+                    # Realizamos la tarea -> Fx auxiliar ?
+
+                    # Recibimos la confirmacion de la copia
+                    # Ha saltado el timeout
+                    receive do
+                      {:copia_ok} -> nil
+                    after
+                      1000 ->
+                        nil
+                    end
+
+                    # Enviamos la confirmacion al cliente
+                    send(
+                      nodo_origen,
+                      {:confirmacion}
+                    )
+                  end
+
+                estado
+
+              estado.rol == :copia ->
+                # Ralizamos la tarea -> Fx auxiliar
+
+                send(
+                  nodo_origen,
+                  {:copia_ok}
+                )
+
+                estado
+            end
 
           {nodo_servidor_gv, estado}
 
@@ -75,21 +118,20 @@ defmodule ServidorSA do
 
         # Distintas operaciones que solo se ejecutaran si nuestro estado.rol == :copia
 
-
         # Mensaje del thread para enviar latido
         {:envia_latido} ->
           # Enviamos -1 si no tenemos una copia asignada -> No validamos la vista
           n_vista =
             cond do
-              estado.primario == Node.self() and estado.copia != :undefined ->
+              estado.pid_primario == Node.self() and estado.pid_copia != :undefined ->
                 # Somos el primario y tenemos copia
                 estado.num_vista
 
-              estado.primario == Node.self() and estado.copia == :undefined ->
+              estado.pid_primario == Node.self() and estado.pid_copia == :undefined ->
                 # Somos el primario y no tenemos copia -> Fallo de disponibilidad. No validamos la vista
                 -1
 
-              estado.primario != Node.self() ->
+              estado.pid_primario != Node.self() ->
                 # No somos primario, enviamos el numero de vista que teniamos asociado
                 estado.num_vista
             end
@@ -111,10 +153,10 @@ defmodule ServidorSA do
           # Actualizamos el estado en base a la vista tentativa
           estado =
             cond do
-              is_ok == false and vista_gv.primario == Node.self() ->
+              is_ok == false and vista_gv.pid_primario == Node.self() ->
                 # Somos primario pero la vista no está validada. (Nos acaban de promocionar)
                 # Actualizamos el valor de nuestra copia a la copia actual en el gestor de vistas
-                estado.copia = vista_gv.copia
+                estado.pid_copia = vista_gv.copia
 
                 estado =
                   if vista_gv.copia != :undefined do
@@ -127,8 +169,8 @@ defmodule ServidorSA do
                     estado
                   end
 
-                estado.primario = Node.self()
-                estado.copia = vista_gv.copia
+                estado.pid_primario = Node.self()
+                estado.pid_copia = vista_gv.copia
                 estado.rol = :primario
                 # Transferencia de los datos a la nueva copia -> Fx auxiliar
                 estado
@@ -136,16 +178,16 @@ defmodule ServidorSA do
               is_ok == true and vista_gv.primario == Node.self() ->
                 # Somos primario y hemos validado la vista
                 estado.num_vista = vista_gv.num_vista
-                estado.primario = vista_gv.primario
-                estado.copia = vista_gv.copia
+                estado.pid_primario = vista_gv.primario
+                estado.pid_copia = vista_gv.copia
                 estado.rol = :primario
                 estado
 
               is_ok == true and vista_gv.copia == Node.self() ->
                 # Somos copia en la vista valida (is_ok = tentativa == valida)
                 estado.num_vista = vista_gv.num_vista
-                estado.primario = vista_gv.primario
-                estado.copia = vista_gv.copia
+                estado.pid_primario = vista_gv.primario
+                estado.pid_copia = vista_gv.copia
                 estado.rol = :copia
 
                 # Recibimos los datos del primario (los ha enviado al recibir el dato de que era primario) -> Fx auxiliar
@@ -154,8 +196,8 @@ defmodule ServidorSA do
               is_ok == true and vista_gv.primario != Node.self() and vista_gv.copia != Node.self() ->
                 # La vista tentativa es la vista valida. Somos un nodo en espera
                 estado.num_vista = vista_gv.num_vista
-                estado.primario = vista_gv.primario
-                estado.copia = vista_gv.copia
+                estado.pid_primario = vista_gv.primario
+                estado.pid_copia = vista_gv.copia
                 estado.rol = :espera
                 estado
             end
