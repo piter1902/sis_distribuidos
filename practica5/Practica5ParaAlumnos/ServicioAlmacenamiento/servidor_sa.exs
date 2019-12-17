@@ -84,11 +84,11 @@ defmodule ServidorSA do
                     # Realizamos la tarea -> Fx auxiliar ?
 
                     # Recibimos la confirmacion de la copia
-                    # Ha saltado el timeout
                     receive do
                       {:copia_ok} -> nil
                     after
                       1000 ->
+                        # Ha saltado el timeout
                         nil
                     end
 
@@ -97,6 +97,8 @@ defmodule ServidorSA do
                       nodo_origen,
                       {:confirmacion}
                     )
+                  else
+                    # No tenemos una copia. Que devolvemos?
                   end
 
                 estado
