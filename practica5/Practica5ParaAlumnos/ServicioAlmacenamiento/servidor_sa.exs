@@ -82,15 +82,18 @@ defmodule ServidorSA do
                     )
 
                     # Realizamos la tarea -> Fx auxiliar ?
+                    {estado, valor} = realizar_tarea(op, param, estado)
 
                     # Recibimos la confirmacion de la copia
                     receive do
-                      {:copia_ok} -> nil
+                      {:copia_ok, _} -> nil
                     after
                       1000 ->
                         # Ha saltado el timeout
                         nil
                     end
+
+                    # Y si ocurre un error aqui??
 
                     # Enviamos la confirmacion al cliente
                     send(
@@ -115,10 +118,11 @@ defmodule ServidorSA do
 
               estado.rol == :copia ->
                 # Ralizamos la tarea -> Fx auxiliar
+                {estado, valor} = realizar_tarea(op, param, estado)
 
                 send(
                   nodo_origen,
-                  {:copia_ok}
+                  {:copia_ok, valor}
                 )
 
                 estado
@@ -265,4 +269,34 @@ defmodule ServidorSA do
   end
 
   # --------- Otras funciones privadas que necesiteis .......
+  defp realizar_tarea(op, param, estado) do
+    {estado, resultado} =
+      cond do
+        op == :escribe_generido ->
+          # param = {clave, nuevo_valor, con_hash (booleano)}
+          {clave, nuevo_valor, con_hash} = param
+          # Realizamos la operacion
+          {estado, resultado} =
+            if con_hash == false do
+              # Sin hash
+              estado.datos = Map.put(estado.datos, clave, nuevo_valor)
+              {estado, resultado}
+            else
+              # Con hash
+              old_value = Map.get(estado.datos, clave, "")
+              # Realizamos la operacion
+              estado.datos = Map.put(estado.datos, clave, hash(old_value <> nuevo_valor))
+              # Devolvemos el estado y el valor de resultado
+              {estado, old_value}
+            end
+
+          {estado, resultado}
+
+        op == :lee ->
+          # param = clave
+          {estado, Map.get(estado.datos, param, "")}
+      end
+
+    {estado, resultado}
+  end
 end
