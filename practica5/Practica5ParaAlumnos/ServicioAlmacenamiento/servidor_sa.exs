@@ -95,10 +95,20 @@ defmodule ServidorSA do
                     # Enviamos la confirmacion al cliente
                     send(
                       nodo_origen,
-                      {:confirmacion}
+                      {:resultado, valor}
                     )
+
+                    # Devolvemos el estado modificado
+                    estado
                   else
-                    # No tenemos una copia. Que devolvemos?
+                    # No tenemos una copia. Informamos de que no hemos validado la vista
+                    send(
+                      nodo_origen,
+                      {:resultado, :no_soy_primario_valido}
+                    )
+
+                    # Devolvemos el estado modificado
+                    estado
                   end
 
                 estado
@@ -112,6 +122,13 @@ defmodule ServidorSA do
                 )
 
                 estado
+
+              true ->
+                # No somos ni primario ni copia. Ha debido ser un error
+                send(
+                  nodo_origen,
+                  {:resultado, :no_soy_primario_valido}
+                )
             end
 
           {nodo_servidor_gv, estado}
@@ -138,6 +155,7 @@ defmodule ServidorSA do
                 estado.num_vista
             end
 
+          # Enviamos el latido al gestor
           send(
             {:servidor_gv, nodo_servidor_gv},
             {:latido, n_vista, Node.self()}
@@ -160,21 +178,32 @@ defmodule ServidorSA do
                 # Actualizamos el valor de nuestra copia a la copia actual en el gestor de vistas
                 estado.pid_copia = vista_gv.copia
 
-                estado =
-                  if vista_gv.copia != :undefined do
-                    # Podemos confirmar la vista al tener un nodo copia -> No hay fallo de disponibilidad
-                    estado.num_vista = vista_gv.num_vista
-                    estado
-                  else
-                    # No podemos confirmar la vista.
-                    estado.num_vista = -1
-                    estado
-                  end
+                # Cuidado con esta parte.
+                # estado =
+                #   if vista_gv.copia != :undefined do
+                #     # Podemos confirmar la vista al tener un nodo copia -> No hay fallo de disponibilidad
+                #     estado.num_vista = vista_gv.num_vista
+                #     estado
+                #   else
+                #     # No podemos confirmar la vista.
+                #     estado.num_vista = -1
+                #     estado
+                #   end
 
+                # Asumimos que el numero de vista es correcto, y a la hora de enviar el latido confirmando la vista, evaluaremos la vista.
+                estado.num_vista = vista_gv.num_vista
                 estado.pid_primario = Node.self()
                 estado.pid_copia = vista_gv.copia
                 estado.rol = :primario
                 # Transferencia de los datos a la nueva copia -> Fx auxiliar
+                if estado.pid_copia != :undefined do
+                  # Fx auxiliar
+                  send(
+                    estado.pid_copia,
+                    {:datos_del_primario, estado.num_vista, estado.datos}
+                  )
+                end
+
                 estado
 
               is_ok == true and vista_gv.primario == Node.self() ->
@@ -193,6 +222,26 @@ defmodule ServidorSA do
                 estado.rol = :copia
 
                 # Recibimos los datos del primario (los ha enviado al recibir el dato de que era primario) -> Fx auxiliar
+                # Si entramos repetidamente en este sitio, no podemos recibir siempre
+                # receive do....after 0 -> si esta en el mailbox ya
+                estado =
+                  receive do
+                    {:datos_del_primario, num_vista, datos} ->
+                      estado =
+                        if estado.num_vista == num_vista do
+                          # Si las vistas coinciden, somos la copia en el num_vista del primario (nos la ha enviado para la vista valida actual)
+                          estado.datos = datos
+                        else
+                          estado
+                        end
+
+                      # Devolvemos el estado
+                      estado
+                  after
+                    0 ->
+                      estado
+                  end
+
                 estado
 
               is_ok == true and vista_gv.primario != Node.self() and vista_gv.copia != Node.self() ->
@@ -202,25 +251,14 @@ defmodule ServidorSA do
                 estado.pid_copia = vista_gv.copia
                 estado.rol = :espera
                 estado
+
+              true ->
+                # Este caso no actualiza la informacion. La vista no esta validada y somos copia o espera en la tentativa.
+                estado
             end
 
           # El estado esta confirmado
           {nodo_servidor_gv, estado}
-
-          #   Este es el codigo antiguo pero no lo borro por si acaso
-          #   estado =
-          #   cond do
-          #     is_ok == false and vista_gv.primario == Node.self() ->
-          #         # Somos primario pero la vista no está validada. (Nos acaban de promocionar)
-          #         # Actualizamos el valor de nuestra copia a la copia actual en el gestor de vistas
-          #         estado.copia = vista_gv.copia
-          #         # Enviamos el almacen a la copia -> operacion aparte
-          #     is_ok == false and vista_gv.copia == Node.self() ->
-          #         # Somos copia pero no nos han validado todavia.
-          #     (vista_gv.primario != Node.self() and vista_gv.copia != Node.self()) or is_ok == true ->
-          #         # Actualizamos el numero de vista porque ha sido validada (is_ok == true)
-          #         estado.num_vista = vista_gv.num_vista
-          #   end
       end
 
     bucle_recepcion_principal(nodo_servidor_gv, estado)
