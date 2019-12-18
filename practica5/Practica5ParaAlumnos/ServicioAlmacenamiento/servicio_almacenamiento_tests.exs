@@ -41,7 +41,7 @@ defmodule  ServicioAlmacenamientoTest do
         IO.puts(" ... Superado")
     end
 
-    @tag :deshabilitado
+    #@tag :deshabilitado
     test "Test 2: Algunas escrituras" do
         #:io.format "Pids de nodo MAESTRO ~p: principal = ~p~n", [node, self]
 

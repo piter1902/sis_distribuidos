@@ -12,7 +12,7 @@ defmodule ServidorSA do
             datos: %{}
 
   @intervalo_latido 50
-
+  @tiempo_espera_de_respuesta 30
   @doc """
       Obtener el hash de un string Elixir
           - Necesario pasar, previamente,  a formato string Erlang
@@ -160,10 +160,11 @@ defmodule ServidorSA do
             end
 
           # Enviamos el latido al gestor
-          send(
-            {:servidor_gv, nodo_servidor_gv},
-            {:latido, n_vista, Node.self()}
-          )
+        #   IO.puts("nodo_servidor_gv: #{inspect(nodo_servidor_gv)}")
+        #   IO.puts("Num vista = #{n_vista}")
+        #   IO.puts("Mi PID: #{inspect(Node.self())}")
+
+          send({:servidor_gv, nodo_servidor_gv}, {:latido, n_vista, Node.self()})
 
           # esperar respuesta del servidor_gv
           {vista_gv, is_ok} =
@@ -173,14 +174,15 @@ defmodule ServidorSA do
             after
               @tiempo_espera_de_respuesta -> {ServidorGV.vista_inicial(), false}
             end
-
+        IO.puts("La copia que nos ha devuelto de tentativa es: #{inspect(vista_gv.copia)}")
           # Actualizamos el estado en base a la vista tentativa
           estado =
             cond do
-              is_ok == false and vista_gv.pid_primario == Node.self() ->
+              is_ok == false and vista_gv.primario == Node.self() ->
+                IO.puts("Soy primario y vista no validada")
                 # Somos primario pero la vista no está validada. (Nos acaban de promocionar)
                 # Actualizamos el valor de nuestra copia a la copia actual en el gestor de vistas
-                estado.pid_copia = vista_gv.copia
+                estado = %ServidorSA{estado | pid_copia: vista_gv.copia}
 
                 # Cuidado con esta parte.
                 # estado =
@@ -195,12 +197,13 @@ defmodule ServidorSA do
                 #   end
 
                 # Asumimos que el numero de vista es correcto, y a la hora de enviar el latido confirmando la vista, evaluaremos la vista.
-                estado.num_vista = vista_gv.num_vista
-                estado.pid_primario = Node.self()
-                estado.pid_copia = vista_gv.copia
-                estado.rol = :primario
+                estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
+                estado = %ServidorSA{estado | pid_primario: Node.self()}
+                estado = %ServidorSA{estado | pid_copia: vista_gv.copia}
+                estado = %ServidorSA{estado | rol: :primario}
                 # Transferencia de los datos a la nueva copia -> Fx auxiliar
                 if estado.pid_copia != :undefined do
+                    IO.puts("Soy primario y envio datos a copia")
                   # Fx auxiliar
                   send(
                     estado.pid_copia,
@@ -211,19 +214,21 @@ defmodule ServidorSA do
                 estado
 
               is_ok == true and vista_gv.primario == Node.self() ->
+                IO.puts("Soy primario y vista SI validada")
                 # Somos primario y hemos validado la vista
-                estado.num_vista = vista_gv.num_vista
-                estado.pid_primario = vista_gv.primario
-                estado.pid_copia = vista_gv.copia
-                estado.rol = :primario
+                estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
+                estado = %ServidorSA{estado | pid_primario: vista_gv.primario}
+                estado = %ServidorSA{estado | pid_copia: vista_gv.copia}
+                estado = %ServidorSA{estado | rol: :primario}
                 estado
 
               is_ok == true and vista_gv.copia == Node.self() ->
+                IO.puts("Soy copia y vista no validada")
                 # Somos copia en la vista valida (is_ok = tentativa == valida)
-                estado.num_vista = vista_gv.num_vista
-                estado.pid_primario = vista_gv.primario
-                estado.pid_copia = vista_gv.copia
-                estado.rol = :copia
+                estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
+                estado = %ServidorSA{estado | pid_primario: vista_gv.primario}
+                estado = %ServidorSA{estado | pid_copia: vista_gv.copia}
+                estado = %ServidorSA{estado | rol: :copia}
 
                 # Recibimos los datos del primario (los ha enviado al recibir el dato de que era primario) -> Fx auxiliar
                 # Si entramos repetidamente en este sitio, no podemos recibir siempre
@@ -234,7 +239,7 @@ defmodule ServidorSA do
                       estado =
                         if estado.num_vista == num_vista do
                           # Si las vistas coinciden, somos la copia en el num_vista del primario (nos la ha enviado para la vista valida actual)
-                          estado.datos = datos
+                          estado = %ServidorSA{estado | datos: datos}
                         else
                           estado
                         end
@@ -249,11 +254,12 @@ defmodule ServidorSA do
                 estado
 
               is_ok == true and vista_gv.primario != Node.self() and vista_gv.copia != Node.self() ->
+                IO.puts("Soy nodo espera y vista no validada")
                 # La vista tentativa es la vista valida. Somos un nodo en espera
-                estado.num_vista = vista_gv.num_vista
-                estado.pid_primario = vista_gv.primario
-                estado.pid_copia = vista_gv.copia
-                estado.rol = :espera
+                estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
+                estado = %ServidorSA{estado | pid_primario: vista_gv.primario}
+                estado = %ServidorSA{estado | pid_copia: vista_gv.copia}
+                estado = %ServidorSA{estado | rol: :espera}
                 estado
 
               true ->
@@ -279,13 +285,17 @@ defmodule ServidorSA do
           {estado, resultado} =
             if con_hash == false do
               # Sin hash
-              estado.datos = Map.put(estado.datos, clave, nuevo_valor)
-              {estado, resultado}
+              estado = %ServidorSA{estado | datos: Map.put(estado.datos, clave, nuevo_valor)}
+              {estado, nuevo_valor}
             else
               # Con hash
               old_value = Map.get(estado.datos, clave, "")
               # Realizamos la operacion
-              estado.datos = Map.put(estado.datos, clave, hash(old_value <> nuevo_valor))
+              estado = %ServidorSA{
+                estado
+                | datos: Map.put(estado.datos, clave, hash(old_value <> nuevo_valor))
+              }
+
               # Devolvemos el estado y el valor de resultado
               {estado, old_value}
             end
