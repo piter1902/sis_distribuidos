@@ -339,7 +339,7 @@ defmodule ServidorGV do
                     {vista_tentativa, nodos_espera, consistente}
 
                   estado_copia != :copia_ok ->
-                    IO.puts("Copia caido, comprobando nodos en espera ...")
+                    IO.puts("Copia caido, comprobando nodos en espera ... ")
                     # Copia ha caido y primario no. Nodos en espera -> copia
                     vista_tentativa = %ServidorGV{
                       vista_tentativa
@@ -360,7 +360,7 @@ defmodule ServidorGV do
 
                         {vista_tentativa, nodos_espera}
                       end
-
+                      IO.puts("vista tentativa: #{inspect(vista_tentativa)}")
                     {vista_tentativa, nodos_espera, consistente}
 
                   true ->
