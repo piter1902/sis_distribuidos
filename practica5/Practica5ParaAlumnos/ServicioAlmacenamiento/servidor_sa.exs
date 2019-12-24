@@ -121,11 +121,10 @@ defmodule ServidorSA do
           {vista_gv, is_ok} =
             receive do
               {:vista_tentativa, vista, encontrado?} -> {vista, encontrado?}
-              _otro -> exit(" ERROR: en funcion #latido# de modulo ClienteGV")
             after
               @tiempo_espera_de_respuesta -> {ServidorGV.vista_inicial(), false}
             end
-
+            IO.puts("Latido enviado correctamente, soy #{inspect(Node.self())} y vista tentativa #{inspect(vista_gv)}")
           # IO.puts("La copia que nos ha devuelto de tentativa es: #{inspect(vista_gv.copia)}")
           # Actualizamos el estado en base a la vista tentativa
           estado =
@@ -222,7 +221,7 @@ defmodule ServidorSA do
 
               true ->
                 # Este caso no actualiza la informacion. La vista no esta validada y somos copia o espera en la tentativa.
-                IO.puts("No cumplo ningun cond y soy #{inspect(Node.self())}")
+                IO.puts("No cumplo ningun cond y soy #{inspect(Node.self())} y la vista tentativa es: #{inspect(vista_gv)}")
                 estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
                 estado = %ServidorSA{estado | pid_primario: vista_gv.primario}
                 estado = %ServidorSA{estado | pid_copia: vista_gv.copia}
