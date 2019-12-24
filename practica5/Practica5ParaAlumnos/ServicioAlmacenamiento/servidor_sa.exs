@@ -78,7 +78,9 @@ defmodule ServidorSA do
 
         {:escribe_generico, param, nodo_origen} ->
           IO.puts(
-            "Cliente que ha contactado con nosotros es: #{inspect({:escribe_generico, param, nodo_origen})}"
+            "Cliente que ha contactado con nosotros es: #{
+              inspect({:escribe_generico, param, nodo_origen})
+            }"
           )
 
           estado = realizar_operacion(estado, :escribe_generico, param, nodo_origen)
@@ -90,9 +92,9 @@ defmodule ServidorSA do
 
         # Mensaje del thread para enviar latido
         {:envia_latido} ->
-          IO.puts(
-            "Envio latido y soy #{inspect(Node.self())} y mi vista es #{inspect(estado.num_vista)}"
-          )
+          # IO.puts(
+          # "Envio latido y soy #{inspect(Node.self())} y mi vista es #{inspect(estado.num_vista)}"
+          # )
 
           # Enviamos -1 si no tenemos una copia asignada -> No validamos la vista
           n_vista =
@@ -124,7 +126,8 @@ defmodule ServidorSA do
             after
               @tiempo_espera_de_respuesta -> {ServidorGV.vista_inicial(), false}
             end
-            #IO.puts("Latido enviado correctamente, soy #{inspect(Node.self())} y vista tentativa #{inspect(vista_gv)}")
+
+           IO.puts("Latido enviado correctamente, soy #{inspect(Node.self())} y vista tentativa #{inspect(vista_gv)}")
           # IO.puts("La copia que nos ha devuelto de tentativa es: #{inspect(vista_gv.copia)}")
           # Actualizamos el estado en base a la vista tentativa
           estado =
@@ -221,7 +224,7 @@ defmodule ServidorSA do
 
               true ->
                 # Este caso no actualiza la informacion. La vista no esta validada y somos copia o espera en la tentativa.
-                #IO.puts("No cumplo ningun cond y soy #{inspect(Node.self())} y la vista tentativa es: #{inspect(vista_gv)}")
+                # IO.puts("No cumplo ningun cond y soy #{inspect(Node.self())} y la vista tentativa es: #{inspect(vista_gv)}")
                 estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
                 estado = %ServidorSA{estado | pid_primario: vista_gv.primario}
                 estado = %ServidorSA{estado | pid_copia: vista_gv.copia}
@@ -238,71 +241,72 @@ defmodule ServidorSA do
   # --------- Otras funciones privadas que necesiteis .......
 
   defp realizar_operacion(estado, op, param, nodo_origen) do
-    estado=
-    cond do
-      estado.rol == :primario ->
-        # Solo podemos contestar si tenemos copia
-        estado =
-          if estado.pid_copia != :undefined do
-            # Repetimos la operacion al nodo copia con nodo_origen = self()
-            send(
-              {:servidor_sa, estado.pid_copia},
-              {op, param, self()}
-            )
+    estado =
+      cond do
+        estado.rol == :primario ->
+          # Solo podemos contestar si tenemos copia
+          estado =
+            if estado.pid_copia != :undefined do
+              # Repetimos la operacion al nodo copia con nodo_origen = self()
+              send(
+                {:servidor_sa, estado.pid_copia},
+                {op, param, self()}
+              )
 
-            # Realizamos la tarea -> Fx auxiliar ?
-            {estado, valor} = realizar_tarea(op, param, estado)
+              # Realizamos la tarea -> Fx auxiliar ?
+              {estado, valor} = realizar_tarea(op, param, estado)
 
-            # Recibimos la confirmacion de la copia
-            receive do
-              {:copia_ok, _} -> nil
-            after
-              1000 ->
-                # Ha saltado el timeout
-                nil
+              # Recibimos la confirmacion de la copia
+              receive do
+                {:copia_ok, _} -> nil
+              after
+                1000 ->
+                  # Ha saltado el timeout
+                  nil
+              end
+
+              # Y si ocurre un error aqui??
+
+              # Enviamos la confirmacion al cliente
+              send(
+                {:cliente_sa, nodo_origen},
+                {:resultado, valor}
+              )
+
+              # Devolvemos el estado modificado
+              estado
+            else
+              # No tenemos una copia. Informamos de que no hemos validado la vista
+              send(
+                {:cliente_sa, nodo_origen},
+                {:resultado, :no_soy_primario_valido}
+              )
+
+              # Devolvemos el estado modificado
+              estado
             end
 
-            # Y si ocurre un error aqui??
+          estado
 
-            # Enviamos la confirmacion al cliente
-            send(
-              {:cliente_sa, nodo_origen},
-              {:resultado, valor}
-            )
+        estado.rol == :copia ->
+          # Ralizamos la tarea -> Fx auxiliar
+          {estado, valor} = realizar_tarea(op, param, estado)
 
-            # Devolvemos el estado modificado
-            estado
-          else
-            # No tenemos una copia. Informamos de que no hemos validado la vista
-            send(
-              nodo_origen,
-              {:resultado, :no_soy_primario_valido}
-            )
+          send(
+            nodo_origen,
+            {:copia_ok, valor}
+          )
 
-            # Devolvemos el estado modificado
-            estado
-          end
+          estado
 
-        estado
+        true ->
+          # No somos ni primario ni copia. Ha debido ser un error
+          send(
+            {:cliente_sa, nodo_origen},
+            {:resultado, :no_soy_primario_valido}
+          )
+      end
 
-      estado.rol == :copia ->
-        # Ralizamos la tarea -> Fx auxiliar
-        {estado, valor} = realizar_tarea(op, param, estado)
-
-        send(
-          nodo_origen,
-          {:copia_ok, valor}
-        )
-
-        estado
-
-      true ->
-        # No somos ni primario ni copia. Ha debido ser un error
-        send(
-          nodo_origen,
-          {:resultado, :no_soy_primario_valido}
-        )
-    end
     estado
   end
 
