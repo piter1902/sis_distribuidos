@@ -360,7 +360,6 @@ defmodule ServidorGV do
 
                         {vista_tentativa, nodos_espera}
                       end
-                      IO.puts("vista tentativa: #{inspect(vista_tentativa)}")
                     {vista_tentativa, nodos_espera, consistente}
 
                   true ->
