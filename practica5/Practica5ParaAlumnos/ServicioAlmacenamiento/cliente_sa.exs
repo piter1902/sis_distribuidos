@@ -128,7 +128,7 @@ defmodule ClienteSA do
 
         case p do
             :undefined ->  # esperamos un rato si aparece primario
-                Process.sleep(ServidorGV.intervalo_latido())
+                Process.sleep(ServidorGV.intervalo_latidos())
                 realizar_operacion(op, param, servidor_gv)
 
             nodo_primario ->   # enviar operación a ejecutar a primario

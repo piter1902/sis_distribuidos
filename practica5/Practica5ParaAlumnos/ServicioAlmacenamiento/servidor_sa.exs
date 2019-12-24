@@ -266,7 +266,7 @@ defmodule ServidorSA do
 
             # Enviamos la confirmacion al cliente
             send(
-              nodo_origen,
+              {:cliente_sa, nodo_origen},
               {:resultado, valor}
             )
 
