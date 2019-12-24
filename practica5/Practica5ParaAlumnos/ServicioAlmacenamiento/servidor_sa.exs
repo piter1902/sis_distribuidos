@@ -144,7 +144,7 @@ defmodule ServidorSA do
 
         # Mensaje del thread para enviar latido
         {:envia_latido} ->
-          IO.puts("Envio latido y soy #{inspect(Node.self())}")
+          IO.puts("Envio latido y soy #{inspect(Node.self())} y mi vista es #{inspect(estado.num_vista)}")
           # Enviamos -1 si no tenemos una copia asignada -> No validamos la vista
           n_vista =
             cond do
@@ -225,7 +225,7 @@ defmodule ServidorSA do
                 estado
 
               is_ok == true and vista_gv.copia == Node.self() ->
-                IO.puts("Soy copia y vista no validada")
+                IO.puts("Soy copia y vista SI validada")
                 # Somos copia en la vista valida (is_ok = tentativa == valida)
                 estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
                 estado = %ServidorSA{estado | pid_primario: vista_gv.primario}
@@ -251,13 +251,14 @@ defmodule ServidorSA do
                       estado
                   after
                     0 ->
+                      IO.puts(" --- Ha saltado el timeout en recepcion de datos del primario --- ")
                       estado
                   end
 
                 estado
 
               is_ok == true and vista_gv.primario != Node.self() and vista_gv.copia != Node.self() ->
-                IO.puts("Soy nodo espera y vista no validada")
+                IO.puts("Soy nodo espera y vista SI validada")
                 # La vista tentativa es la vista valida. Somos un nodo en espera
                 estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
                 estado = %ServidorSA{estado | pid_primario: vista_gv.primario}
@@ -267,6 +268,10 @@ defmodule ServidorSA do
 
               true ->
                 # Este caso no actualiza la informacion. La vista no esta validada y somos copia o espera en la tentativa.
+                IO.puts("No cumplo ningun cond y soy #{inspect(Node.self())}")
+                estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
+                estado = %ServidorSA{estado | pid_primario: vista_gv.primario}
+                estado = %ServidorSA{estado | pid_copia: vista_gv.copia}
                 estado
             end
 
@@ -281,7 +286,7 @@ defmodule ServidorSA do
   defp realizar_tarea(op, param, estado) do
     {estado, resultado} =
       cond do
-        op == :escribe_generido ->
+        op == :escribe_generico ->
           # param = {clave, nuevo_valor, con_hash (booleano)}
           {clave, nuevo_valor, con_hash} = param
           # Realizamos la operacion
