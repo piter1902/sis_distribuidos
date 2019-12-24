@@ -89,7 +89,7 @@ defmodule ServidorGV do
     {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera, consistente} =
       receive do
         {:latido, n_vista_latido, nodo_emisor} ->
-          IO.puts("Soy server_gv y me llega latido de #{inspect(nodo_emisor)}")
+          #IO.puts("Soy server_gv y me llega latido de #{inspect(nodo_emisor)}")
           {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera, consistente} =
             if consistente == true do
               {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera, consistente} =

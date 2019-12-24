@@ -1,7 +1,7 @@
 Code.require_file("#{__DIR__}/cliente_gv.exs")
 
 defmodule ClienteSA do
-    
+
     @doc """
         Poner en marcha un nodo cliente del servicio de almacenamiento
     """
@@ -12,7 +12,7 @@ defmodule ClienteSA do
 
         Node.spawn(nodo, __MODULE__, :init, [nodo_servidor_gv])
 
-        nodo    
+        nodo
     end
 
 
@@ -32,7 +32,7 @@ defmodule ClienteSA do
     @spec startService(node, node) :: pid
     def startService(nodoCA, nodo_servidor_gv) do
         NodoRemoto.esperaNodoOperativo(nodoCA, __MODULE__)
-        
+
         # Poner en marcha el código del gestor de vistas
         Node.spawn(nodoCA, __MODULE__, :init, [nodo_servidor_gv])
    end
@@ -65,7 +65,7 @@ defmodule ClienteSA do
     """
     @spec escribe_generico( node(), String.t, String.t, boolean ) :: String.t
     def escribe_generico(nodo_cliente, clave, nuevo_valor, con_hash) do
-        send({:cliente_sa, nodo_cliente}, {:escribe_generico, 
+        send({:cliente_sa, nodo_cliente}, {:escribe_generico,
                                         {clave, nuevo_valor, con_hash}, self()})
 
         receive do
@@ -77,9 +77,9 @@ defmodule ClienteSA do
                 Process.sleep 100
 
                 exit("ERROR: funcion escribe_generico en modulo CLienteSA")
-        end       
+        end
     end
-     
+
 
     @doc """
        - Devuelve nuevo valor escrito
@@ -96,7 +96,7 @@ defmodule ClienteSA do
     def escribe_hash(nodo_cliente, clave, nuevo_valor) do
         escribe_generico(nodo_cliente, clave, nuevo_valor, true)
     end
-    
+
 
     #------------------- Funciones privadas ---------------------------------
 
@@ -115,16 +115,17 @@ defmodule ClienteSA do
                 bucle_recepcion(servidor_gv)
 
             _otro -> exit("ERROR: mensaje erroneo en ClienteSA.bucle_recepcion")
-        end   
+        end
     end
 
 
     defp realizar_operacion(op, param, servidor_gv) do
         # Obtener el primario del servicio de almacenamiento
         p = ClienteGV.primario(servidor_gv)
-        
+        IO.puts("Soy cliente y se que el primario es #{inspect(p)} y  se que mi Node.self() es #{inspect(Node.self())} ")
+
         #IO.puts "CLienteSA #{node} obtiene nod PRIMARIO #{p}"
-    
+
         case p do
             :undefined ->  # esperamos un rato si aparece primario
                 Process.sleep(ServidorGV.intervalo_latido())
@@ -132,13 +133,13 @@ defmodule ClienteSA do
 
             nodo_primario ->   # enviar operación a ejecutar a primario
                 send({:servidor_sa, nodo_primario}, {op, param, Node.self()})
-    
+
                 # recuperar resultado
                 receive do
                     {:resultado, :no_soy_primario_valido} ->
                         realizar_operacion(op, param, servidor_gv)
 
-                    {:resultado, valor} -> 
+                    {:resultado, valor} ->
                         valor
 
                 # Sin resultado en tiempo establecido ?
@@ -149,5 +150,5 @@ defmodule ClienteSA do
         end
     end
 
- 
+
 end

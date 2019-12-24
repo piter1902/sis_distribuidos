@@ -69,6 +69,7 @@ defmodule ServidorSA do
         # Solicitudes de lectura y escritura
         # de clientes del servicio alm.
         {op, param, nodo_origen} ->
+          IO.puts("Cliente que ha contactado con nosotros es: #{inspect({op, param, nodo_origen})}")
           estado =
             cond do
               estado.rol == :primario ->
@@ -77,7 +78,7 @@ defmodule ServidorSA do
                   if estado.pid_copia != :undefined do
                     # Repetimos la operacion al nodo copia con nodo_origen = self()
                     send(
-                      estado.pid_copia,
+                      {:servidor_sa,estado.pid_copia},
                       {op, param, self()}
                     )
 
@@ -143,6 +144,7 @@ defmodule ServidorSA do
 
         # Mensaje del thread para enviar latido
         {:envia_latido} ->
+          IO.puts("Envio latido y soy #{inspect(Node.self())}")
           # Enviamos -1 si no tenemos una copia asignada -> No validamos la vista
           n_vista =
             cond do
@@ -174,7 +176,7 @@ defmodule ServidorSA do
             after
               @tiempo_espera_de_respuesta -> {ServidorGV.vista_inicial(), false}
             end
-        IO.puts("La copia que nos ha devuelto de tentativa es: #{inspect(vista_gv.copia)}")
+        #IO.puts("La copia que nos ha devuelto de tentativa es: #{inspect(vista_gv.copia)}")
           # Actualizamos el estado en base a la vista tentativa
           estado =
             cond do
@@ -206,8 +208,8 @@ defmodule ServidorSA do
                     IO.puts("Soy primario y envio datos a copia")
                   # Fx auxiliar
                   send(
-                    estado.pid_copia,
-                    {:datos_del_primario, estado.num_vista, estado.datos}
+                    {:servidor_sa,estado.pid_copia},
+                    {estado.num_vista, estado.datos}
                   )
                 end
 
@@ -235,7 +237,8 @@ defmodule ServidorSA do
                 # receive do....after 0 -> si esta en el mailbox ya
                 estado =
                   receive do
-                    {:datos_del_primario, num_vista, datos} ->
+                    {num_vista, datos} ->
+                      IO.puts("--- Soy copia y me llega info del primario ---")
                       estado =
                         if estado.num_vista == num_vista do
                           # Si las vistas coinciden, somos la copia en el num_vista del primario (nos la ha enviado para la vista valida actual)

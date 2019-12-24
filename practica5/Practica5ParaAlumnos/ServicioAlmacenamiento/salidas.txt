@@ -1,0 +1,100 @@
+Test: Solo arranque y parada ...
+/usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+/usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+/usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+Asignando primario a :"sa1@127.0.0.1" ...
+Soy primario y vista no validada
+Tiempo puesta en marcha de nodos  : 1741
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Finalmente eliminamos nodos
+nodo GV :: :"sv@127.0.0.1"
+UNo
+DOS
+/usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+/usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+/usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+ ... Superado
+./usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+/usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+/usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+/usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+/usr/bin/id: no se puede encontrar el nombre para el grupo con ID 1000000
+Asignando primario a :"sa1@127.0.0.1" ...
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Asignando copia a :"sa2@127.0.0.1"...
+Soy primario y vista no validada
+Soy primario y envio datos a copia
+Cliente que ha contactado con nosotros es: %{}
+
+11:20:10.544 [error] Process #PID<16202.259.0> on node :"sa2@127.0.0.1" raised an exception
+** (ArgumentError) argument error
+    :erlang.send(%{}, {:resultado, :no_soy_primario_valido})
+    Documents/3o/sis_dist/practica5/Practica5ParaAlumnos/ServicioAlmacenamiento/servidor_sa.exs:133: ServidorSA.bucle_recepcion_principal/2
+Soy primario y vista SI validada
+Soy primario y vista SI validada
+Copia caido, comprobando nodos en espera ...
+Tiempo puesta en marcha de nodos  : 2164
+Asignando copia a :"sa3@127.0.0.1"...
+Soy primario y vista no validada
+Soy primario y envio datos a copia
+Cliente que ha contactado con nosotros es: %{}
+
+11:20:10.665 [error] Process #PID<16203.320.0> on node :"sa3@127.0.0.1" raised an exception
+** (ArgumentError) argument error
+    :erlang.send(%{}, {:resultado, :no_soy_primario_valido})
+    Documents/3o/sis_dist/practica5/Practica5ParaAlumnos/ServicioAlmacenamiento/servidor_sa.exs:133: ServidorSA.bucle_recepcion_principal/2
+Soy primario y vista SI validada
+Soy primario y vista SI validada
+Soy primario y vista SI validada
+Copia caido, comprobando nodos en espera ...
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Soy primario y vista no validada
+Test: Comprobar escritura con primario, copia y espera ...
+Devolviendo vista valida ...
+Soy primario y vista no validada
+
+
+  1) test Test 2: Algunas escrituras (ServicioAlmacenamientoTest)
+     servicio_almacenamiento_tests.exs:45
+     Assertion with == failed
+     code:  assert c == mapa_nodos.sa2()
+     left:  :"sa3@127.0.0.1"
+     right: :"sa2@127.0.0.1"
+     stacktrace:
+       servicio_almacenamiento_tests.exs:64: (test)
+
+
+
+Finished in 6.2 seconds (0.1s on load, 6.1s on tests)
+3 tests, 1 failure, 1 excluded
+
+Randomized with seed 0
