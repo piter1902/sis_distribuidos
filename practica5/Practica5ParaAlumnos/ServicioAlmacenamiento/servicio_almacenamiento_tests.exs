@@ -290,7 +290,7 @@ defmodule ServicioAlmacenamientoTest do
 
   # Test 6 : Petición de escritura duplicada por perdida de respuesta
   #         (modificación realizada en BD), con primario y copia.
-  #@tag :deshabilitado
+  @tag :deshabilitado
   test "Test 6 : Escritura duplicada por perdida de respuesta" do
     IO.puts("Test: Escritura duplicada por perdida de respuesta ...")
 
@@ -346,6 +346,52 @@ defmodule ServicioAlmacenamientoTest do
 
   # Test 7 : Comprobación de que un antiguo primario no debería servir
   #         operaciones de lectura.
+  #@tag :deshabilitado
+  test "Test 7 : Antiguo primario no procesa lecturas" do
+    IO.puts("Test: Antiguo primario no procesa lecturas ...")
+
+    # Para que funcione bien la función  ClienteGV.obten_vista
+    Process.register(self(), :servidor_sa)
+
+    # Arrancar nodos : 1 GV, 3 servidores y 3 cliente de almacenamiento
+    mapa_nodos =
+      startServidores(
+        ["ca1", "ca2", "ca3"],
+        ["sa1", "sa2", "sa3"],
+        @maquinas
+      )
+
+    # Espera configuracion y relacion entre nodos
+    Process.sleep(200)
+
+    # Comprobar primeros nodos primario y copia
+    {%{primario: p, copia: c}, _ok} = ClienteGV.obten_vista(mapa_nodos.gv)
+    assert p == mapa_nodos.sa1
+    assert c == mapa_nodos.sa2
+
+    # Escritura concurrente de mismas 2 claves, pero valores diferentes
+    # Posteriormente comprobar que estan igual en primario y copia
+    escritura_concurrente(mapa_nodos)
+
+    Process.sleep(200)
+
+    # Forzar parada de primario
+    antiguoPrimario = ClienteGV.primario(mapa_nodos.gv)
+    NodoRemoto.stop(antiguoPrimario)
+
+    # Esperar detección fallo y reconfiguración copia a primario
+    Process.sleep(700)
+
+    #ServidorSA.startService("sa1@"<>hd(@maquinas),mapa_nodos.gv)
+    ServidorSA.startNodo("sa1",hd(@maquinas))
+
+    Process.sleep(200)
+    # Obtener valor de las clave "0" y "1" con el primer primario
+
+    valor1primario = ClienteSA.lee(antiguoPrimario, "0")
+    assert valor1primario == :no_soy_primario_valido
+    IO.puts(" ... Superado")
+  end
 
   # ------------------ FUNCIONES DE APOYO A TESTS ------------------------
 
