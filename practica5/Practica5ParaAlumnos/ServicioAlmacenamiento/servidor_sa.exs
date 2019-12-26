@@ -228,6 +228,14 @@ defmodule ServidorSA do
                 estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
                 estado = %ServidorSA{estado | pid_primario: vista_gv.primario}
                 estado = %ServidorSA{estado | pid_copia: vista_gv.copia}
+                estado=
+                if estado.pid_copia == Node.self() do
+                  estado = %ServidorSA{estado | rol: :copia}
+                  estado
+                else
+                  estado = %ServidorSA{estado | rol: :espera}
+                  estado
+                end
                 estado
             end
 
@@ -260,7 +268,7 @@ defmodule ServidorSA do
               receive do
                 {:copia_ok, _} -> nil
               after
-                1000 ->
+                100 ->
                   # Ha saltado el timeout
                   nil
               end

@@ -14,7 +14,7 @@ defmodule ServicioAlmacenamientoTest do
 
   # @moduletag timeout 100  para timeouts de todos lo test de este modulo
 
-  @maquinas ["127.0.0.1", "127.0.0.1", "127.0.0.1"]
+  @maquinas ["127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1"]
   # @maquinas ["155.210.154.192", "155.210.154.193", "155.210.154.194"]
 
   # @latidos_fallidos 4
