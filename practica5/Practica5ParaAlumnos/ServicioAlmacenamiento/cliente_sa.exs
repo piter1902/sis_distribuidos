@@ -46,8 +46,27 @@ defmodule ClienteSA do
     send({:cliente_sa, nodo_cliente}, {:lee, clave, self()})
 
     receive do
-      {:resultado, valor} -> valor
-      _otro -> exit("ERROR de programa : funcion lee en modulo CLienteSA")
+      {:resultado, valor} -> IO.puts("---------------- me ha llegado #{inspect(valor)} -----------------")
+        valor
+      otro ->
+        IO.puts("---------------- HE MUERTO POR #{inspect(otro)} -----------------")
+        exit("ERROR de programa : funcion lee en modulo CLienteSA")
+    end
+  end
+
+  @doc """
+     Envia peticion de lectura al servidor indicado
+  """
+  @spec leeServerIndicado(node(), String.t()) :: String.t()
+  def leeServerIndicado(nodo_primario, clave) do
+    send({:servidor_sa, nodo_primario}, {:lee, clave, Node.self()})
+
+    receive do
+      {:resultado, valor} -> IO.puts("---------------- me ha llegado #{inspect(valor)} -----------------")
+        valor
+      otro ->
+        IO.puts("---------------- HE MUERTO POR #{inspect(otro)} -----------------")
+        exit("ERROR de programa : funcion lee en modulo CLienteSA")
     end
   end
 

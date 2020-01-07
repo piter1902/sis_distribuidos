@@ -46,9 +46,14 @@ defmodule ServidorSA do
   # ------------------- Funciones privadas -----------------------------
 
   def monitor_latidos(pid_principal) do
-    send(pid_principal, {:envia_latido})
+    send(pid_principal, {:envia_latido, false})
     Process.sleep(@intervalo_latido)
     monitor_latidos(pid_principal)
+  end
+
+  def latido0(pid_principal) do
+    IO.puts("ENVIANDO LATIDO 0")
+    send({:servidor_sa, pid_principal}, {:envia_latido, true})
   end
 
   def init_sa(nodo_servidor_gv) do
@@ -69,9 +74,9 @@ defmodule ServidorSA do
         # Solicitudes de lectura y escritura
         # de clientes del servicio alm.
         {:lee, param, nodo_origen} ->
-          IO.puts(
-            "Cliente que ha contactado con nosotros es: #{inspect({:lee, param, nodo_origen})}"
-          )
+         # IO.puts(
+         #   "Cliente que ha contactado con nosotros es: #{inspect({:lee, param, nodo_origen})}"
+         # )
 
           estado = realizar_operacion(estado, :lee, param, nodo_origen)
           {nodo_servidor_gv, estado}
@@ -91,10 +96,10 @@ defmodule ServidorSA do
         # Distintas operaciones que solo se ejecutaran si nuestro estado.rol == :copia
 
         # Mensaje del thread para enviar latido
-        {:envia_latido} ->
-          # IO.puts(
-          # "Envio latido y soy #{inspect(Node.self())} y mi vista es #{inspect(estado.num_vista)}"
-          # )
+        {:envia_latido, caida_test} ->
+           IO.puts(
+           "Envio latido y soy #{inspect(Node.self())} y mi vista es #{inspect(estado.num_vista)}"
+           )
 
           # Enviamos -1 si no tenemos una copia asignada -> No validamos la vista
           n_vista =
@@ -116,9 +121,14 @@ defmodule ServidorSA do
           #   IO.puts("nodo_servidor_gv: #{inspect(nodo_servidor_gv)}")
           #   IO.puts("Num vista = #{n_vista}")
           #   IO.puts("Mi PID: #{inspect(Node.self())}")
-
-          send({:servidor_gv, nodo_servidor_gv}, {:latido, n_vista, Node.self()})
-
+          # Comprobamos si nos han forzado una recaída (solo sirve para test)
+          if caida_test == true do
+            IO.puts("TRUEEEEEEEEEEEEE")
+            send({:servidor_gv, nodo_servidor_gv}, {:latido, 0, Node.self()})
+          else
+            IO.puts("FALSEEEEEEEEEEEEE")
+            send({:servidor_gv, nodo_servidor_gv}, {:latido, n_vista, Node.self()})
+          end
           # esperar respuesta del servidor_gv
           {vista_gv, is_ok} =
             receive do
@@ -127,7 +137,7 @@ defmodule ServidorSA do
               @tiempo_espera_de_respuesta -> {ServidorGV.vista_inicial(), false}
             end
 
-           IO.puts("Latido enviado correctamente, soy #{inspect(Node.self())} y vista tentativa #{inspect(vista_gv)}")
+          # IO.puts("Latido enviado correctamente, soy #{inspect(Node.self())} y vista tentativa #{inspect(vista_gv)}")
           # IO.puts("La copia que nos ha devuelto de tentativa es: #{inspect(vista_gv.copia)}")
           # Actualizamos el estado en base a la vista tentativa
           estado =
@@ -205,7 +215,7 @@ defmodule ServidorSA do
                   after
                     0 ->
                       IO.puts(
-                        " --- Ha saltado el timeout en recepcion de datos del primario --- "
+                        " --- No hay datos del primario --- "
                       )
 
                       estado

@@ -21,7 +21,7 @@ defmodule NodoRemoto do
       "--erl -detached",
       "--no-halt #{fichero_programa_cargar}"
     ])
-    IO.puts("-----------Nodo inicializado #{inspect(nombre)}")
+
     # Devolver el atomo que referencia al nodo Elixir a poner en marcha
     String.to_atom(nombre <> "@" <> host)
   end
