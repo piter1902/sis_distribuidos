@@ -89,7 +89,7 @@ defmodule ServidorGV do
     {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera, consistente} =
       receive do
         {:latido, n_vista_latido, nodo_emisor} ->
-          #IO.puts("Soy server_gv y me llega latido de #{inspect(nodo_emisor)}")
+          # IO.puts("Soy server_gv y me llega latido de #{inspect(nodo_emisor)}")
           {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera, consistente} =
             if consistente == true do
               {vista_valida, vista_tentativa, latidos_fallidos, nodos_espera, consistente} =
@@ -126,6 +126,7 @@ defmodule ServidorGV do
                           # Recaida del primario
                           # Promocion de copia a primario -> si existe
                           IO.puts("Recaida de primario. Asignando copia como primario ...")
+
                           vista_tentativa = %ServidorGV{
                             vista_tentativa
                             | primario: vista_tentativa.copia
@@ -168,6 +169,7 @@ defmodule ServidorGV do
                           # Recaida de copia
                           # Añadimos caido a lista de espera sii hay nueva copia asignada
                           IO.puts("Recaida de copia.Comprobando nodos espera ...")
+
                           vista_tentativa = %ServidorGV{
                             vista_tentativa
                             | num_vista: vista_tentativa.num_vista + 1
@@ -261,6 +263,7 @@ defmodule ServidorGV do
 
         {:obten_vista_valida, pid} ->
           IO.puts("Devolviendo vista valida ...")
+
           send(
             pid,
             {:vista_valida, obtener_vista(vista_valida), vista_valida == vista_tentativa}
@@ -308,6 +311,7 @@ defmodule ServidorGV do
                         {vista_tentativa, consistente}
                       else
                         IO.puts("Funcionamiento correcto. Asignando copia como primario.")
+
                         vista_tentativa = %ServidorGV{
                           vista_tentativa
                           | primario: vista_valida.copia
@@ -360,6 +364,7 @@ defmodule ServidorGV do
 
                         {vista_tentativa, nodos_espera}
                       end
+
                     {vista_tentativa, nodos_espera, consistente}
 
                   true ->

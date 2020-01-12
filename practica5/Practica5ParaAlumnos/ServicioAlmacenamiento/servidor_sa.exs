@@ -74,20 +74,10 @@ defmodule ServidorSA do
         # Solicitudes de lectura y escritura
         # de clientes del servicio alm.
         {:lee, param, nodo_origen} ->
-         # IO.puts(
-         #   "Cliente que ha contactado con nosotros es: #{inspect({:lee, param, nodo_origen})}"
-         # )
-
           estado = realizar_operacion(estado, :lee, param, nodo_origen)
           {nodo_servidor_gv, estado}
 
         {:escribe_generico, param, nodo_origen} ->
-          IO.puts(
-            "Cliente que ha contactado con nosotros es: #{
-              inspect({:escribe_generico, param, nodo_origen})
-            }"
-          )
-
           estado = realizar_operacion(estado, :escribe_generico, param, nodo_origen)
           {nodo_servidor_gv, estado}
 
@@ -97,10 +87,6 @@ defmodule ServidorSA do
 
         # Mensaje del thread para enviar latido
         {:envia_latido, caida_test} ->
-           IO.puts(
-           "Envio latido y soy #{inspect(Node.self())} y mi vista es #{inspect(estado.num_vista)}"
-           )
-
           # Enviamos -1 si no tenemos una copia asignada -> No validamos la vista
           n_vista =
             cond do
@@ -123,16 +109,34 @@ defmodule ServidorSA do
           #   IO.puts("Mi PID: #{inspect(Node.self())}")
           # Comprobamos si nos han forzado una recaída (solo sirve para test)
           if caida_test == true do
-            IO.puts("TRUEEEEEEEEEEEEE")
             send({:servidor_gv, nodo_servidor_gv}, {:latido, 0, Node.self()})
           else
-            IO.puts("FALSEEEEEEEEEEEEE")
             send({:servidor_gv, nodo_servidor_gv}, {:latido, n_vista, Node.self()})
           end
-          # esperar respuesta del servidor_gv
-          {vista_gv, is_ok} =
+
+          # esperar respuesta del servidor_gv. Comprobamos rol que tenemos en la vista
+          # Esto se realiza para el caso de que hayamos sufrido una caída temporal, para
+          # evitar que creamos que tenemos un rol que ya no poseemos.
+          {vista_gv, is_ok, estado} =
             receive do
-              {:vista_tentativa, vista, encontrado?} -> {vista, encontrado?}
+              {:vista_tentativa, vista, encontrado?} ->
+                estado =
+                  cond do
+                    vista.primario == Node.self() ->
+                      # En la vista somos el primario.
+                      estado = %ServidorSA{estado | rol: :primario}
+                      estado
+
+                    vista.copia == Node.self() ->
+                      estado = %ServidorSA{estado | rol: :copia}
+                      estado
+
+                    true ->
+                      estado = %ServidorSA{estado | rol: :espera}
+                      estado
+                  end
+
+                {vista, encontrado?, estado}
             after
               @tiempo_espera_de_respuesta -> {ServidorGV.vista_inicial(), false}
             end
@@ -214,9 +218,7 @@ defmodule ServidorSA do
                       estado
                   after
                     0 ->
-                      IO.puts(
-                        " --- No hay datos del primario --- "
-                      )
+                      IO.puts(" --- No hay datos del primario --- ")
 
                       estado
                   end
@@ -238,14 +240,16 @@ defmodule ServidorSA do
                 estado = %ServidorSA{estado | num_vista: vista_gv.num_vista}
                 estado = %ServidorSA{estado | pid_primario: vista_gv.primario}
                 estado = %ServidorSA{estado | pid_copia: vista_gv.copia}
-                estado=
-                if estado.pid_copia == Node.self() do
-                  estado = %ServidorSA{estado | rol: :copia}
-                  estado
-                else
-                  estado = %ServidorSA{estado | rol: :espera}
-                  estado
-                end
+
+                estado =
+                  if estado.pid_copia == Node.self() do
+                    estado = %ServidorSA{estado | rol: :copia}
+                    estado
+                  else
+                    estado = %ServidorSA{estado | rol: :espera}
+                    estado
+                  end
+
                 estado
             end
 
@@ -273,7 +277,6 @@ defmodule ServidorSA do
 
               # Realizamos la tarea -> Fx auxiliar ?
               {estado, valor} = realizar_tarea(op, param, estado)
-
               # Recibimos la confirmacion de la copia
               receive do
                 {:copia_ok, _} -> nil
@@ -323,6 +326,8 @@ defmodule ServidorSA do
             {:cliente_sa, nodo_origen},
             {:resultado, :no_soy_primario_valido}
           )
+
+          estado
       end
 
     estado

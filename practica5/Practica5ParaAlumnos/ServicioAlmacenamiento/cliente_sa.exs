@@ -46,8 +46,9 @@ defmodule ClienteSA do
     send({:cliente_sa, nodo_cliente}, {:lee, clave, self()})
 
     receive do
-      {:resultado, valor} -> IO.puts("---------------- me ha llegado #{inspect(valor)} -----------------")
+      {:resultado, valor} ->
         valor
+
       otro ->
         IO.puts("---------------- HE MUERTO POR #{inspect(otro)} -----------------")
         exit("ERROR de programa : funcion lee en modulo CLienteSA")
@@ -57,13 +58,15 @@ defmodule ClienteSA do
   @doc """
      Envia peticion de lectura al servidor indicado
   """
-  @spec leeServerIndicado(node(), String.t()) :: String.t()
-  def leeServerIndicado(nodo_primario, clave) do
-    send({:servidor_sa, nodo_primario}, {:lee, clave, Node.self()})
+  @spec leeServerIndicado(node(), node(), String.t()) :: String.t()
+  def leeServerIndicado(nodo_cliente, nodo_primario, clave) do
+    IO.puts("---------------- FUNCION LEE SERVER INDICADO -----------------")
+    send({:cliente_sa, nodo_cliente}, {:leeServerIndicado, clave, self(), nodo_primario})
 
     receive do
-      {:resultado, valor} -> IO.puts("---------------- me ha llegado #{inspect(valor)} -----------------")
+      {:resultado, valor} ->
         valor
+
       otro ->
         IO.puts("---------------- HE MUERTO POR #{inspect(otro)} -----------------")
         exit("ERROR de programa : funcion lee en modulo CLienteSA")
@@ -125,7 +128,20 @@ defmodule ClienteSA do
         send(pid, {:resultado, resultado})
         bucle_recepcion(servidor_gv)
 
-      {:resultado, _} ->
+      {op, param, pid, nodo_primario} ->
+        # Caso especial, en el que estamos realizando test
+        send({:servidor_sa, nodo_primario}, {:lee, param, Node.self()})
+
+        resultado =
+          receive do
+            {:resultado, valor} ->
+              valor
+          end
+
+        send(pid, {:resultado, resultado})
+        bucle_recepcion(servidor_gv)
+
+      {:resultado, temp} ->
         bucle_recepcion(servidor_gv)
 
       _otro ->
@@ -136,14 +152,6 @@ defmodule ClienteSA do
   defp realizar_operacion(op, param, servidor_gv) do
     # Obtener el primario del servicio de almacenamiento
     p = ClienteGV.primario(servidor_gv)
-
-    IO.puts(
-      "Soy cliente y se que el primario es #{inspect(p)} y  se que mi Node.self() es #{
-        inspect(Node.self())
-      } "
-    )
-
-    # IO.puts "CLienteSA #{node} obtiene nod PRIMARIO #{p}"
 
     case p do
       # esperamos un rato si aparece primario
