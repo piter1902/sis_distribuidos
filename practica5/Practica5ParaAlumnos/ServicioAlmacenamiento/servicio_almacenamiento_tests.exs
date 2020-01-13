@@ -14,8 +14,8 @@ defmodule ServicioAlmacenamientoTest do
 
   # @moduletag timeout 100  para timeouts de todos lo test de este modulo
 
-  @maquinas ["127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1"]
-  # @maquinas ["155.210.154.192", "155.210.154.193", "155.210.154.194"]
+  # @maquinas ["127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1"]
+  @maquinas ["155.210.154.191", "155.210.154.192", "155.210.154.194", "155.210.154.195"]
 
   # @latidos_fallidos 4
 
@@ -77,7 +77,7 @@ defmodule ServicioAlmacenamientoTest do
     NodoRemoto.stop(nodo_copia)
 
     # esperar a reconfiguracion de servidores
-    Process.sleep(700)
+    Process.sleep(1400)
 
     ClienteSA.escribe(mapa_nodos.ca1, "a", "aaa")
     comprobar(mapa_nodos.ca1, "a", "aaa")
@@ -109,7 +109,7 @@ defmodule ServicioAlmacenamientoTest do
       )
 
     # Espera configuracion y relacion entre nodos
-    Process.sleep(1500)
+    Process.sleep(3500)
 
     # Comprobar primeros nodos primario y copia
     {%{primario: p, copia: c}, _ok} = ClienteGV.obten_vista(mapa_nodos.gv)
@@ -120,7 +120,7 @@ defmodule ServicioAlmacenamientoTest do
     # Posteriormente comprobar que estan igual en primario y copia
     escritura_concurrente(mapa_nodos)
 
-    Process.sleep(200)
+    Process.sleep(400)
 
     # Obtener valor de las clave "0" y "1" con el primer primario
     valor1primario = ClienteSA.lee(mapa_nodos.ca1, "0")
@@ -130,7 +130,7 @@ defmodule ServicioAlmacenamientoTest do
     NodoRemoto.stop(ClienteGV.primario(mapa_nodos.gv))
 
     # Esperar detección fallo y reconfiguración copia a primario
-    Process.sleep(700)
+    Process.sleep(1400)
 
     # Obtener valor de clave "0" y "1" con segundo primario (copia anterior)
     valor1copia = ClienteSA.lee(mapa_nodos.ca3, "0")
@@ -170,7 +170,7 @@ defmodule ServicioAlmacenamientoTest do
       )
 
     # Espera configuracion y relacion entre nodos
-    Process.sleep(200)
+    Process.sleep(3500)
 
     # Comprobar primeros nodos primario y copia
     {%{primario: p, copia: c}, _ok} = ClienteGV.obten_vista(mapa_nodos.gv)
@@ -181,7 +181,7 @@ defmodule ServicioAlmacenamientoTest do
     # Posteriormente comprobar que estan igual en primario y copia
     escritura_concurrente(mapa_nodos)
 
-    Process.sleep(200)
+    Process.sleep(400)
 
     # Obtener valor de las clave "0" y "1" con el primer primario
     valor1primario = ClienteSA.lee(mapa_nodos.ca1, "0")
@@ -191,7 +191,7 @@ defmodule ServicioAlmacenamientoTest do
     NodoRemoto.stop(ClienteGV.primario(mapa_nodos.gv))
 
     # Esperar detección fallo y reconfiguración copia a primario
-    Process.sleep(700)
+    Process.sleep(1400)
 
     # Obtener valor de clave "0" y "1" con segundo primario (copia anterior)
     valor1copia = ClienteSA.lee(mapa_nodos.ca3, "0")
@@ -210,7 +210,7 @@ defmodule ServicioAlmacenamientoTest do
     NodoRemoto.stop(ClienteGV.primario(mapa_nodos.gv))
 
     # Esperar detección fallo y reconfiguración copia a primario
-    Process.sleep(700)
+    Process.sleep(1400)
 
     # Obtener valor de clave "0" y "1" con segundo primario (copia anterior)
     valor1copia = ClienteSA.lee(mapa_nodos.ca2, "0")
@@ -249,7 +249,7 @@ defmodule ServicioAlmacenamientoTest do
       )
 
     # Espera configuracion y relacion entre nodos
-    Process.sleep(200)
+    Process.sleep(3500)
 
     # Comprobar primeros nodos primario y copia
     {%{primario: p, copia: c}, _ok} = ClienteGV.obten_vista(mapa_nodos.gv)
@@ -263,10 +263,10 @@ defmodule ServicioAlmacenamientoTest do
     # Escribir tras caída
     ClienteSA.escribe(mapa_nodos.ca1, "a", "aa")
 
-    Process.sleep(200)
+    Process.sleep(400)
 
     # Esperar detección fallo y reconfiguración copia a primario
-    Process.sleep(300)
+    Process.sleep(600)
 
     # Obtener valor de las clave "a" con el primer primario
     IO.puts("---- ENVIAMOS PETICION LECTURA 1 ----")
@@ -306,7 +306,7 @@ defmodule ServicioAlmacenamientoTest do
       )
 
     # Espera configuracion y relacion entre nodos
-    Process.sleep(200)
+    Process.sleep(3500)
 
     # Comprobar primeros nodos primario y copia
     {%{primario: p, copia: c}, _ok} = ClienteGV.obten_vista(mapa_nodos.gv)
@@ -319,7 +319,7 @@ defmodule ServicioAlmacenamientoTest do
     # Escritura duplicada
     escritura_concurrente(mapa_nodos)
 
-    Process.sleep(200)
+    Process.sleep(400)
 
     # Obtener valor de las clave "0" y "1" con el primer primario
     valor1primario = ClienteSA.lee(mapa_nodos.ca1, "0")
@@ -362,7 +362,7 @@ defmodule ServicioAlmacenamientoTest do
       )
 
     # Espera configuracion y relacion entre nodos
-    Process.sleep(200)
+    Process.sleep(3500)
 
     # Comprobar primeros nodos primario y copia
     {%{primario: p, copia: c}, _ok} = ClienteGV.obten_vista(mapa_nodos.gv)
@@ -373,18 +373,18 @@ defmodule ServicioAlmacenamientoTest do
     # Posteriormente comprobar que estan igual en primario y copia
     escritura_concurrente(mapa_nodos)
 
-    Process.sleep(200)
+    Process.sleep(600)
 
     # Forzar parada de primario
     antiguoPrimario = ClienteGV.primario(mapa_nodos.gv)
     # NodoRemoto.stop(antiguoPrimario)
 
     # Esperar detección fallo y reconfiguración copia a primario
-    Process.sleep(700)
+    Process.sleep(1400)
 
     # Con esta función se simula el reinicio de un nodo
     ServidorSA.latido0(antiguoPrimario)
-    Process.sleep(200)
+    Process.sleep(400)
     # Obtener valor de las clave "0" y "1" con el primer primario
 
     valor1primario = ClienteSA.leeServerIndicado(mapa_nodos.ca2, antiguoPrimario, "0")

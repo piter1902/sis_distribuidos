@@ -1,0 +1,88 @@
+ ... Superado
+./usr/bin/id: cannot find name for group ID 1000000
+-----------Nodo inicializado "sv"
+/usr/bin/id: cannot find name for group ID 1000000
+-----------Nodo inicializado "ca1"
+/usr/bin/id: cannot find name for group ID 1000000
+-----------Nodo inicializado "sa1"
+/usr/bin/id: cannot find name for group ID 1000000
+-----------Nodo inicializado "sa2"
+/usr/bin/id: cannot find name for group ID 1000000
+-----------Nodo inicializado "sa3"
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 0
+Asignando primario a :"sa1@127.0.0.1" ...
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 1
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 1
+Soy primario y vista no validada
+Envio latido y soy :"sa2@127.0.0.1" y mi vista es 0
+Asignando copia a :"sa2@127.0.0.1"...
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 1
+Soy primario y vista no validada
+Soy primario y envio datos a copia
+Envio latido y soy :"sa2@127.0.0.1" y mi vista es 0
+Recaida de copia.Comprobando nodos espera ...
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 2
+Soy primario y vista no validada
+Soy primario y envio datos a copia
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 3
+Soy primario y vista SI validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 3
+Soy primario y vista SI validada
+Tiempo puesta en marcha de nodos  : 2138
+Envio latido y soy :"sa3@127.0.0.1" y mi vista es 0
+Soy nodo espera y vista no validada
+Copia caido, comprobando nodos en espera ...
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 3
+Soy primario y vista no validada
+Soy primario y envio datos a copia
+Envio latido y soy :"sa3@127.0.0.1" y mi vista es 3
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 4
+Soy primario y vista SI validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 4
+Soy primario y vista SI validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 4
+Soy primario y vista SI validada
+Copia caido, comprobando nodos en espera ...
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 4
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5
+Soy primario y vista no validada
+Test: Comprobar escritura con primario, copia y espera ...
+Devolviendo vista valida ...
+Envio latido y soy :"sa1@127.0.0.1" y mi vista es 5

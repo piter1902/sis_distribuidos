@@ -138,7 +138,7 @@ defmodule ServidorSA do
 
                 {vista, encontrado?, estado}
             after
-              @tiempo_espera_de_respuesta -> {ServidorGV.vista_inicial(), false}
+              @tiempo_espera_de_respuesta -> {ServidorGV.vista_inicial(), false, estado}
             end
 
           # IO.puts("Latido enviado correctamente, soy #{inspect(Node.self())} y vista tentativa #{inspect(vista_gv)}")

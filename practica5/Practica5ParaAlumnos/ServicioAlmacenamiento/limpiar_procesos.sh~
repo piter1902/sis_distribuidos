@@ -5,6 +5,6 @@
 
 for maq in $(cat $1)
 do
-	echo $maq $(ssh $maq pkill -9 epmd)
-	echo $maq $(ssh $maq pkill -9 beam.smp)
+	ssh $maq pkill -9 epmd
+	ssh $maq pkill -9 beam.smp
 done
